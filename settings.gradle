@@ -1,0 +1,4 @@
+rootProject.name = 'Boxer'
+
+include 'core'
+
