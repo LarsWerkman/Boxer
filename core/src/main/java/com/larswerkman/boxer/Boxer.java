@@ -27,6 +27,10 @@ public class Boxer {
         }
     }
 
+    public void add(String key, String value){
+        map.put(key, value);
+    }
+
     public <T extends Boxable> T get(String key, Class<T> clazz){
         try {
             Class boxer = Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
@@ -36,5 +40,9 @@ public class Boxer {
             System.out.println(e.getMessage());
         };
         return null;
+    }
+
+    public String get(String key){
+        return (String) map.get(key);
     }
 }
