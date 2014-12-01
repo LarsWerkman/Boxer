@@ -9,6 +9,7 @@ import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -16,6 +17,7 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
 import java.lang.reflect.WildcardType;
 import java.util.*;
 
@@ -48,7 +50,11 @@ public class BoxerProcessor extends AbstractProcessor {
         elementUtils = processingEnv.getElementUtils();
         typeUtils = processingEnv.getTypeUtils();
 
-        storeTypes();
+        TYPE_BOXABLE = elementUtils.getTypeElement("com.larswerkman.boxer.Boxable").asType();
+        TYPE_STRING = elementUtils.getTypeElement("java.lang.String").asType();
+        TYPE_LIST = typeUtils.getDeclaredType(
+                elementUtils.getTypeElement("java.util.List"),
+                typeUtils.getWildcardType(TYPE_BOXABLE, null));
 
         Set<? extends Element> elements = env.getElementsAnnotatedWith(Box.class);
         for(Element element : elements){
@@ -75,11 +81,15 @@ public class BoxerProcessor extends AbstractProcessor {
                         Wrap wrap = child.getAnnotation(Wrap.class);
                         TypeMirror wrapType = null;
                         if(wrap != null){
-                            wrapType = elementUtils.getTypeElement(wrap.value().getTypeName()).asType();
+                            try {
+                                wrap.value();
+                            } catch (MirroredTypeException e){
+                                wrapType = e.getTypeMirror();
+                            }
                         }
 
                         TypeMirror type = ((VariableElement) child).asType();
-                        if(isAcceptable(type)) {
+                        if(isAcceptable(type) || isEnum(type)) {
                             fields.add(new PackedField(name, type, modifier, false, wrapType));
                         } else if(isArray(type)){
                             TypeMirror arrayType = getTypeOfArray(type);
@@ -133,6 +143,8 @@ public class BoxerProcessor extends AbstractProcessor {
                                         + CLASS_EXTENSION + "." + METHOD_WRITE
                                         + "(boxable." + field.getter() + "))"
                         );
+                    } else if(isEnum(field.type())){
+                        writer.emitStatement("map.put(\"%s\", boxable.%s.name())", field.name(), field.getter());
                     }
                 } else {
                     TypeMirror arrayType = getTypeOfArray(field.type());
@@ -183,6 +195,9 @@ public class BoxerProcessor extends AbstractProcessor {
                         writer.emitStatement("boxable." + field.setter(
                                 field.type() + CLASS_EXTENSION + "." + METHOD_READ + "((HashMap) map.get(\"" + field.name() + "\"))"
                         ));
+                    } else if (isEnum(field.type())){
+                        writer.emitStatement("boxable.%s", field.setter(
+                                String.format("%s.valueOf((String) map.get(\"%s\"))", field.type(), field.name())));
                     }
                 } else {
                     TypeMirror arrayType = getTypeOfArray(field.type());
@@ -244,12 +259,9 @@ public class BoxerProcessor extends AbstractProcessor {
                 || typeUtils.isSameType(type, TYPE_STRING));
     }
 
-    private void storeTypes(){
-        TYPE_BOXABLE = elementUtils.getTypeElement("com.larswerkman.boxer.Boxable").asType();
-        TYPE_STRING = elementUtils.getTypeElement("java.lang.String").asType();
-        TYPE_LIST = typeUtils.getDeclaredType(
-                elementUtils.getTypeElement("java.util.List"),
-                typeUtils.getWildcardType(TYPE_BOXABLE, null));
+    public boolean isEnum(TypeMirror type) {
+        return typeUtils.asElement(type)
+                .getKind() == ElementKind.ENUM;
     }
 
     private boolean isPrimitiveOrWrapper(TypeMirror type){

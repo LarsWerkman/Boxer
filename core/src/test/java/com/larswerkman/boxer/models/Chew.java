@@ -22,6 +22,7 @@ public class Chew implements Boxable {
     @Packet
     public Double calories;
 
+    @Packet
     public Flavour flavour;
 
     public Chew(){
@@ -61,7 +62,7 @@ public class Chew implements Boxable {
 
         return width == ((Chew) obj).width
                 && height == ((Chew) obj).height
-                && calories.equals(((Chew) obj).calories);
-                //&& flavour == ((Chew) obj).flavour;
+                && calories.equals(((Chew) obj).calories)
+                && flavour == ((Chew) obj).flavour;
     }
 }
