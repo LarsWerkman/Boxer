@@ -1,4 +1,4 @@
-package com.larswerkman.boxer;
+package com.larswerkman.boxer.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

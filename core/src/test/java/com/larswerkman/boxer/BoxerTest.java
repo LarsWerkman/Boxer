@@ -1,6 +1,7 @@
 package com.larswerkman.boxer;
 
-import com.larswerkman.boxer.models.Pack;
+import android.os.Bundle;
+import com.larswerkman.boxer.models.Chew;
 import org.junit.Assert;
 
 /**
@@ -10,15 +11,16 @@ public class BoxerTest {
 
     @org.junit.Test
     public void test(){
-        Boxer boxer = new Boxer();
+        Boxer boxer = Boxer.from(new Bundle());
+        new Bundle().
 
-        Pack bigCodeChew = new Pack("Big Code Chew");
+        /*Pack bigCodeChew = new Pack("Big Code Chew");
         bigCodeChew.fill(20);
-        bigCodeChew.eat();
+        bigCodeChew.eat();*/
 
-        boxer.add("chew", bigCodeChew);
-        Pack storedChew = boxer.get("chew", Pack.class);
+        boxer.addBoxable("chew", new Chew(2, 3, 2.5, Chew.Flavour.MINT));
+        Chew storedChew = boxer.get("chew", Chew.class);
 
-        Assert.assertEquals(bigCodeChew, storedChew);
+        Assert.assertEquals(new Chew(2, 3, 2.5, Chew.Flavour.MINT), storedChew);
     }
 }

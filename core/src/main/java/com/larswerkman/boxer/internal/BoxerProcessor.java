@@ -1,8 +1,9 @@
 package com.larswerkman.boxer.internal;
 
-import com.larswerkman.boxer.Box;
-import com.larswerkman.boxer.Packet;
-import com.larswerkman.boxer.Wrap;
+import com.larswerkman.boxer.Boxer;
+import com.larswerkman.boxer.annotations.Box;
+import com.larswerkman.boxer.annotations.Packet;
+import com.larswerkman.boxer.annotations.Wrap;
 import com.squareup.javawriter.JavaWriter;
 
 import javax.annotation.processing.*;
@@ -17,15 +18,13 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.reflect.WildcardType;
 import java.util.*;
 
 /**
  * Created by lars on 13-11-14.
  */
 @SupportedSourceVersion(SourceVersion.RELEASE_6)
-@SupportedAnnotationTypes("com.larswerkman.boxer.Box")
+@SupportedAnnotationTypes("com.larswerkman.boxer.annotations.Box")
 public class BoxerProcessor extends AbstractProcessor {
 
     public static final String CLASS_EXTENSION = "Boxer";
@@ -57,21 +56,21 @@ public class BoxerProcessor extends AbstractProcessor {
                 typeUtils.getWildcardType(TYPE_BOXABLE, null));
 
         Set<? extends Element> elements = env.getElementsAnnotatedWith(Box.class);
-        for(Element element : elements){
+        for (Element element : elements) {
             TypeElement typeElement = (TypeElement) element;
             //Check if implements Boxable interface
-            if(typeUtils.isAssignable(typeElement.asType(), TYPE_BOXABLE)){
+            if (typeUtils.isAssignable(typeElement.asType(), TYPE_BOXABLE)) {
                 List<PackedField> fields = new ArrayList<PackedField>();
                 List<? extends Element> enclosedElements = typeElement.getEnclosedElements();
-                for(Element child : enclosedElements){
+                for (Element child : enclosedElements) {
                     Packet annotation = child.getAnnotation(Packet.class);
-                    if(annotation != null){
+                    if (annotation != null) {
                         String name = child.getSimpleName().toString();
                         Modifier modifier = null;
-                        for(Modifier mod : child.getModifiers()){
-                            if(mod == Modifier.PUBLIC || mod == Modifier.PRIVATE || mod == Modifier.PROTECTED){
+                        for (Modifier mod : child.getModifiers()) {
+                            if (mod == Modifier.PUBLIC || mod == Modifier.PRIVATE || mod == Modifier.PROTECTED) {
                                 modifier = mod;
-                            } else if(mod == Modifier.FINAL){
+                            } else if (mod == Modifier.FINAL) {
                                 log.printMessage(Diagnostic.Kind.ERROR,
                                         "Packet annotation can't be placed on final types");
                                 return true;
@@ -80,20 +79,20 @@ public class BoxerProcessor extends AbstractProcessor {
 
                         Wrap wrap = child.getAnnotation(Wrap.class);
                         TypeMirror wrapType = null;
-                        if(wrap != null){
+                        if (wrap != null) {
                             try {
                                 wrap.value();
-                            } catch (MirroredTypeException e){
+                            } catch (MirroredTypeException e) {
                                 wrapType = e.getTypeMirror();
                             }
                         }
 
                         TypeMirror type = ((VariableElement) child).asType();
-                        if(isAcceptable(type) || isEnum(type)) {
+                        if (isAcceptable(type) || isEnum(type)) {
                             fields.add(new PackedField(name, type, modifier, false, wrapType));
-                        } else if(isArray(type)){
+                        } else if (isArray(type)) {
                             TypeMirror arrayType = getTypeOfArray(type);
-                            if(arrayType != null) {
+                            if (arrayType != null) {
                                 if (isAcceptable(arrayType)) {
                                     fields.add(new PackedField(name, type, modifier, true, wrapType));
                                 } else {
@@ -111,7 +110,7 @@ public class BoxerProcessor extends AbstractProcessor {
                     }
                 }
 
-                if(fields.size() > 0){
+                if (fields.size() > 0) {
                     brewJava(typeElement, fields);
                 }
             }
@@ -119,7 +118,7 @@ public class BoxerProcessor extends AbstractProcessor {
         return true;
     }
 
-    private void brewJava(TypeElement classElement, List<PackedField> fields){
+    private void brewJava(TypeElement classElement, List<PackedField> fields) {
         try {
             String original = classElement.getSimpleName().toString();
             String originalQualified = classElement.getQualifiedName().toString();
@@ -129,37 +128,38 @@ public class BoxerProcessor extends AbstractProcessor {
             JavaFileObject jfo = filer.createSourceFile(qualified);
             JavaWriter writer = new JavaWriter(jfo.openWriter());
             writer.emitPackage(getPackage(classElement))
-                    .emitImports(HashMap.class.getName(), List.class.getName(), ArrayList.class.getName(), originalQualified)
-                    .beginType(simple + "", "class", EnumSet.of(Modifier.PUBLIC, Modifier.FINAL))
-                    .beginMethod("HashMap<String, Object>", METHOD_WRITE, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), original, "boxable")
-                    .emitStatement("HashMap<String, Object> map = new HashMap<String, Object>()");
-            for(PackedField field : fields) {
-                if(!field.isArray()) {
+                    .emitImports(Boxer.class.getName(), List.class.getName(), ArrayList.class.getName(), originalQualified)
+                    .beginType(simple, "class", EnumSet.of(Modifier.PUBLIC, Modifier.FINAL))
+                    .beginMethod("void", METHOD_WRITE, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), original, "boxable", "Boxer", "boxer");
+            for (PackedField field : fields) {
+                if (!field.isArray()) {
                     if (isPrimitiveOrWrapper(field.type()) || typeUtils.isSameType(field.type(), TYPE_STRING)) {
-                        writer.emitStatement("map.put(\"" + field.name() + "\", boxable." + field.getter() + ")");
+                        writer.emitStatement("boxer.add%s(\"%s\", boxable.%s)",
+                                mappingName(field.type()), field.name(), field.getter());
                     } else if (typeUtils.isAssignable(field.type(), TYPE_BOXABLE)) {
-                        writer.emitStatement("map.put(\""
+                        writer.emitStatement("boxer.put(\""
                                         + field.name() + "\"," + field.type()
                                         + CLASS_EXTENSION + "." + METHOD_WRITE
                                         + "(boxable." + field.getter() + "))"
-                        );
-                    } else if(isEnum(field.type())){
-                        writer.emitStatement("map.put(\"%s\", boxable.%s.name())", field.name(), field.getter());
+                        );//TODO
+                    } else if (isEnum(field.type())) {
+                        writer.emitStatement("boxer.add%s(\"%s\", boxable.%s)",
+                                mappingName(field.type()), field.name(), field.getter());
                     }
                 } else {
-                    TypeMirror arrayType = getTypeOfArray(field.type());
-                    if(arrayType != null){
-                        if(isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
+                    TypeMirror arrayType = getTypeOfArray(field.type());//FIXME
+                    if (arrayType != null) {
+                        if (isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
                             writer.emitStatement("List<Object> %sArray = new ArrayList<Object>()", field.name());
-                        } else if(typeUtils.isAssignable(arrayType, TYPE_BOXABLE)){
+                        } else if (typeUtils.isAssignable(arrayType, TYPE_BOXABLE)) {
                             writer.emitStatement("List<HashMap<String, Object>> %sArray = new ArrayList<HashMap<String, Object>>()", field.name());
                         }
 
-                        if(field.type().getKind() == TypeKind.ARRAY){
+                        if (field.type().getKind() == TypeKind.ARRAY) {
                             writer.beginControlFlow("for(int i = 0; i < boxable.%s.length; i++)", field.name());
-                            if(isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
+                            if (isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
                                 writer.emitStatement("%sArray.add(boxable.%s[i])", field.getter());
-                            } else if(typeUtils.isAssignable(arrayType, TYPE_BOXABLE)){
+                            } else if (typeUtils.isAssignable(arrayType, TYPE_BOXABLE)) {
                                 writer.emitStatement("%sArray.add(%s.%s(boxable.%s[i]))",
                                         field.name(), arrayType + CLASS_EXTENSION,
                                         METHOD_WRITE, field.getter()
@@ -168,9 +168,9 @@ public class BoxerProcessor extends AbstractProcessor {
                             writer.endControlFlow();
                         } else {
                             writer.beginControlFlow("for(int i = 0; i < boxable.%s.size(); i++)", field.name());
-                            if(isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
+                            if (isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
                                 writer.emitStatement("%sArray.add(boxable.%s.get(i))", field.getter());
-                            } else if(typeUtils.isAssignable(arrayType, TYPE_BOXABLE)){
+                            } else if (typeUtils.isAssignable(arrayType, TYPE_BOXABLE)) {
                                 writer.emitStatement("%sArray.add(%s.%s(boxable.%s.get(i)))",
                                         field.name(), arrayType + CLASS_EXTENSION,
                                         METHOD_WRITE, field.getter()
@@ -182,38 +182,40 @@ public class BoxerProcessor extends AbstractProcessor {
                     }
                 }
             }
-            writer.emitStatement("return map")
-                    .endMethod()
+            writer.endMethod()
                     .beginMethod(classElement.getQualifiedName().toString(),
-                            METHOD_READ, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), "HashMap<String, Object>", "map")
+                            METHOD_READ, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), "Boxer", "boxer")
                     .emitStatement(original + " boxable = new " + original + "()");
-            for(PackedField field : fields){
-                if(!field.isArray()) {
+            for (PackedField field : fields) {
+                if (!field.isArray()) {
                     if (isPrimitiveOrWrapper(field.type()) || typeUtils.isSameType(field.type(), TYPE_STRING)) {
-                        writer.emitStatement("boxable." + field.setter("(" + field.type() + ") map.get(\"" + field.name() + "\")"));
+                        writer.emitStatement("boxable.%s", field.setter(
+                                String.format("boxer.get%s(\"%s\")", mappingName(field.type()), field.name()))
+                        );
                     } else if (typeUtils.isAssignable(field.type(), TYPE_BOXABLE)) {
                         writer.emitStatement("boxable." + field.setter(
                                 field.type() + CLASS_EXTENSION + "." + METHOD_READ + "((HashMap) map.get(\"" + field.name() + "\"))"
                         ));
-                    } else if (isEnum(field.type())){
+                    } else if (isEnum(field.type())) {
                         writer.emitStatement("boxable.%s", field.setter(
-                                String.format("%s.valueOf((String) map.get(\"%s\"))", field.type(), field.name())));
+                                String.format("boxer.get%s(\"%s\", %s.class)", mappingName(field.type()), field.name(), field.type()))
+                        );
                     }
                 } else {
                     TypeMirror arrayType = getTypeOfArray(field.type());
-                    if(arrayType != null){
-                        if(isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
+                    if (arrayType != null) {
+                        if (isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
                             writer.emitStatement("List<Object> %sArray = (ArrayList) map.get(\"%s\")", field.name(), field.name());
-                        } else if(typeUtils.isAssignable(arrayType, TYPE_BOXABLE)){
+                        } else if (typeUtils.isAssignable(arrayType, TYPE_BOXABLE)) {
                             writer.emitStatement("List<HashMap<String, Object>> %sArray = (ArrayList) map.get(\"%s\")", field.name(), field.name());
                         }
 
-                        if(field.type().getKind() == TypeKind.ARRAY){
-                            writer.emitStatement("%s %sTemp = new %s[%sArray.size()]",field.type(), field.name(), arrayType, field.name());
+                        if (field.type().getKind() == TypeKind.ARRAY) {
+                            writer.emitStatement("%s %sTemp = new %s[%sArray.size()]", field.type(), field.name(), arrayType, field.name());
                             writer.beginControlFlow("for(int i = 0; i < %sArray.size(); i++)", field.name());
-                            if(isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
+                            if (isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
                                 writer.emitStatement("%sTemp[i] = (%s) %sArray.get(i)", field.name(), arrayType, field.name());
-                            } else if(typeUtils.isAssignable(arrayType, TYPE_BOXABLE)){
+                            } else if (typeUtils.isAssignable(arrayType, TYPE_BOXABLE)) {
                                 writer.emitStatement("%sTemp[i] = %s%s.%s((HashMap) %sArray.get(i))",
                                         field.name(), arrayType, CLASS_EXTENSION, METHOD_READ, field.name()
                                 );
@@ -221,8 +223,8 @@ public class BoxerProcessor extends AbstractProcessor {
                             writer.endControlFlow();
                         } else {
                             TypeMirror rawListType = typeUtils.getDeclaredType(elementUtils.getTypeElement("java.util.List"), arrayType);
-                            if(typeUtils.isSameType(rawListType, field.type())){
-                                if(field.wrapper() != null){
+                            if (typeUtils.isSameType(rawListType, field.type())) {
+                                if (field.wrapper() != null) {
                                     writer.emitStatement("%s %sTemp = new %s<%s>()", field.type(), field.name(), field.wrapper(), arrayType);
                                 } else {
                                     writer.emitStatement("%s %sTemp = new ArrayList<%s>()", field.type(), field.name(), arrayType);
@@ -231,10 +233,10 @@ public class BoxerProcessor extends AbstractProcessor {
                                 writer.emitStatement("%s %sTemp = new %s()", field.type(), field.name(), field.type());
                             }
                             writer.beginControlFlow("for(int i = 0; i < %sArray.size(); i++)", field.name());
-                            if(isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
-                                writer.emitStatement("%sTemp.add((%s) %sArray.get(i))", field.name(), arrayType, field.name());
-                            } else if(typeUtils.isAssignable(arrayType, TYPE_BOXABLE)){
-                                writer.emitStatement("%sTemp.add(%s%s.%s((HashMap) %sArray.get(i)))",
+                            if (isPrimitiveOrWrapper(arrayType) || typeUtils.isSameType(arrayType, TYPE_STRING)) {
+                                writer.emitStatement("%sTemp.addBoxable((%s) %sArray.get(i))", field.name(), arrayType, field.name());
+                            } else if (typeUtils.isAssignable(arrayType, TYPE_BOXABLE)) {
+                                writer.emitStatement("%sTemp.addBoxable(%s%s.%s((HashMap) %sArray.get(i)))",
                                         field.name(), arrayType, CLASS_EXTENSION, METHOD_READ, field.name()
                                 );
                             }
@@ -248,24 +250,48 @@ public class BoxerProcessor extends AbstractProcessor {
                     .endMethod()
                     .endType()
                     .close();
-        } catch (IOException e){
+        } catch (IOException e) {
             log.printMessage(Diagnostic.Kind.ERROR, e.getMessage(), classElement);
         }
     }
 
-    private boolean isAcceptable(TypeMirror type){
+    private boolean isAcceptable(TypeMirror type) {
         return (isPrimitiveOrWrapper(type)
                 || typeUtils.isAssignable(type, TYPE_BOXABLE)
                 || typeUtils.isSameType(type, TYPE_STRING));
     }
 
-    public boolean isEnum(TypeMirror type) {
-        return typeUtils.asElement(type)
-                .getKind() == ElementKind.ENUM;
+    private String mappingName(TypeMirror type) {
+        if (type.toString().equals("boolean") || type.toString().equals("java.lang.Boolean")) {
+            return "Boolean";
+        } else if (type.toString().equals("byte") || type.toString().equals("java.lang.Byte")) {
+            return "Byte";
+        } else if (type.toString().equals("char") || type.toString().equals("java.lang.Character")) {
+            return "Char";
+        } else if (type.toString().equals("short") || type.toString().equals("java.lang.Short")) {
+            return "Short";
+        } else if (type.toString().equals("int") || type.toString().equals("java.lang.Integer")) {
+            return "Int";
+        } else if (type.toString().equals("long") || type.toString().equals("java.lang.Long")) {
+            return "Long";
+        } else if (type.toString().equals("float") || type.toString().equals("java.lang.Float")) {
+            return "Float";
+        } else if (type.toString().equals("double") || type.toString().equals("java.lang.Double")) {
+            return "Double";
+        } else if (type.toString().equals("int") || type.toString().equals("java.lang.Integer")) {
+            return "Int";
+        } else if (type.toString().equals("int") || type.toString().equals("java.lang.Integer")) {
+            return "Int";
+        } else if(typeUtils.isSameType(type, TYPE_STRING)){
+            return "String";
+        } else if (isEnum(type)){
+            return "Enum";
+        }
+        return "";
     }
 
-    private boolean isPrimitiveOrWrapper(TypeMirror type){
-        return(type.getKind().isPrimitive()
+    private boolean isPrimitiveOrWrapper(TypeMirror type) {
+        return (type.getKind().isPrimitive()
                 || type.toString().equals("java.lang.Byte")
                 || type.toString().equals("java.lang.Short")
                 || type.toString().equals("java.lang.Integer")
@@ -276,12 +302,17 @@ public class BoxerProcessor extends AbstractProcessor {
                 || type.toString().equals("java.lang.Boolean"));
     }
 
-    private boolean isArray(TypeMirror type){
+    public boolean isEnum(TypeMirror type) {
+        return typeUtils.asElement(type)
+                .getKind() == ElementKind.ENUM;
+    }
+
+    private boolean isArray(TypeMirror type) {
         return type.getKind() == TypeKind.ARRAY || typeUtils.isAssignable(type, TYPE_LIST);
     }
 
-    private TypeMirror getTypeOfArray(TypeMirror type){
-        if(type.getKind() == TypeKind.ARRAY){
+    private TypeMirror getTypeOfArray(TypeMirror type) {
+        if (type.getKind() == TypeKind.ARRAY) {
             return elementUtils.getTypeElement(type.toString().substring(0, type.toString().length() - 2)).asType();
         } else {
             return ((DeclaredType) type).getTypeArguments().get(0);

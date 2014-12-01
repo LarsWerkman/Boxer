@@ -1,8 +1,8 @@
 package com.larswerkman.boxer.models;
 
-import com.larswerkman.boxer.Box;
+import com.larswerkman.boxer.annotations.Box;
 import com.larswerkman.boxer.Boxable;
-import com.larswerkman.boxer.Packet;
+import com.larswerkman.boxer.annotations.Packet;
 
 /**
  * Created by lars on 25-11-14.

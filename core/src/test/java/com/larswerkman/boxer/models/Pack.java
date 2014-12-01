@@ -1,9 +1,9 @@
 package com.larswerkman.boxer.models;
 
-import com.larswerkman.boxer.Box;
+import com.larswerkman.boxer.annotations.Box;
 import com.larswerkman.boxer.Boxable;
-import com.larswerkman.boxer.Packet;
-import com.larswerkman.boxer.Wrap;
+import com.larswerkman.boxer.annotations.Packet;
+import com.larswerkman.boxer.annotations.Wrap;
 
 import java.util.Arrays;
 import java.util.List;

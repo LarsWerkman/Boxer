@@ -2,6 +2,7 @@ package com.larswerkman.boxer.internal;
 
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import java.lang.reflect.Type;
 
 /**
