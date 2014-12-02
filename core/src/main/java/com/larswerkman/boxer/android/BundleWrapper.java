@@ -59,7 +59,7 @@ public class BundleWrapper extends Boxer {
 
     @Override
     public void addEnum(String key, Enum value) {
-        bundle.putString(key, value.name());
+        this.bundle.putString(key, value.name());
     }
 
     @Override
@@ -68,7 +68,7 @@ public class BundleWrapper extends Boxer {
         for(int i = 0; i < strings.length; i++){
             strings[i] = value[i].name();
         }
-        bundle.putStringArray(key, strings);
+        this.bundle.putStringArray(key, strings);
     }
 
     @Override
@@ -77,7 +77,22 @@ public class BundleWrapper extends Boxer {
         for(int i = 0; i < value.size(); i++){
             strings[i] = value.get(i).name();
         }
-        bundle.putStringArray(key, strings);
+        this.bundle.putStringArray(key, strings);
+    }
+
+    @Override
+    public void addString(String key, String value) {
+        this.bundle.putString(key, value);
+    }
+
+    @Override
+    public void addStringArray(String key, String[] value) {
+        this.bundle.putStringArray(key, value);
+    }
+
+    @Override
+    public void addStringList(String key, List<String> value) {
+        this.bundle.putStringArray(key, (String[]) value.toArray());
     }
 
     @Override

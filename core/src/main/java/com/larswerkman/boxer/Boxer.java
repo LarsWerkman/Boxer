@@ -23,7 +23,7 @@ public abstract class Boxer {
         try{
             if(Class.forName("android.os.Parcel")
                     .isAssignableFrom(object.getClass())){
-                return new ParcelWrapper(object);
+                //return new ParcelWrapper(object);
             }
         } catch (ClassNotFoundException e){/*Do nothing*/}
         return null;
@@ -39,6 +39,10 @@ public abstract class Boxer {
     public abstract void addEnum(String key, Enum value);
     public abstract void addEnumArray(String key, Enum[] value);
     public abstract void addEnumList(String key, List<Enum> value);
+
+    public abstract void addString(String key, String value);
+    public abstract void addStringArray(String key, String[] value);
+    public abstract void addStringList(String key, List<String> value);
 
     public abstract void addBoolean(String key, boolean value);
     public abstract void addBooleanArray(String key, boolean[] value);
