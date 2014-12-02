@@ -1,7 +1,11 @@
 package com.larswerkman.boxer;
 
+import android.bluetooth.BluetoothClass;
 import android.os.Bundle;
+import com.google.android.gms.wearable.DataMap;
+import com.larswerkman.boxer.annotations.Box;
 import com.larswerkman.boxer.models.Chew;
+import com.larswerkman.boxer.models.Pack;
 import org.junit.Assert;
 
 /**
@@ -11,15 +15,15 @@ public class BoxerTest {
 
     @org.junit.Test
     public void test(){
-        Boxer boxer = Boxer.from(new Bundle());
+        Boxer boxer = Boxer.from(new DataMap());
 
-        /*Pack bigCodeChew = new Pack("Big Code Chew");
+        Pack bigCodeChew = new Pack("Big Code Chew");
         bigCodeChew.fill(20);
-        bigCodeChew.eat();*/
+        bigCodeChew.eat();
 
-        /*boxer.addBoxable("chew", new Chew(2, 3, 2.5, Chew.Flavour.MINT));
-        Chew storedChew = boxer.get("chew", Chew.class);
+        boxer.addBoxable("pack", bigCodeChew);
+        Pack newBigCodeChew = boxer.getBoxable("pack", Pack.class);
 
-        Assert.assertEquals(new Chew(2, 3, 2.5, Chew.Flavour.MINT), storedChew);*/
+        Assert.assertEquals(bigCodeChew, newBigCodeChew);
     }
 }

@@ -1,4 +1,4 @@
-package com.larswerkman.boxer.android;
+package com.larswerkman.boxer.wrappers.android;
 
 import android.os.Bundle;
 import com.larswerkman.boxer.Boxable;
@@ -7,7 +7,6 @@ import com.larswerkman.boxer.internal.BoxerProcessor;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,7 +26,7 @@ public class BundleWrapper extends Boxer {
         try {
             Class boxer = Class.forName(value.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
             Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, value.getClass(), Boxer.class);
-            method.invoke(null, value, new BundleWrapper(new Bundle()));
+            method.invoke(null, value, new BundleWrapper(bundle));
         } catch (Exception e){}
         return bundle;
     }

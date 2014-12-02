@@ -1,7 +1,7 @@
 package com.larswerkman.boxer;
 
-import com.larswerkman.boxer.android.BundleWrapper;
-import com.larswerkman.boxer.android.ParcelWrapper;
+import com.larswerkman.boxer.wrappers.android.BundleWrapper;
+
 import java.util.List;
 
 /**

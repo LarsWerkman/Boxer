@@ -1,12 +1,6 @@
-package com.larswerkman.boxer.android;
+package com.larswerkman.boxer.wrappers.android;
 
-import android.os.Bundle;
 import android.os.Parcel;
-import com.larswerkman.boxer.Boxable;
-import com.larswerkman.boxer.Boxer;
-import com.larswerkman.boxer.internal.BoxerProcessor;
-
-import java.lang.reflect.Method;
 
 /**
  * Created by Lars Werkman

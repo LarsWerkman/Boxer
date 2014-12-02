@@ -25,6 +25,9 @@ public class Chew implements Boxable {
     @Packet
     public Flavour flavour;
 
+    @Packet
+    public double price;
+
     public Chew(){
 
     }
