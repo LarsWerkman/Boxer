@@ -7,7 +7,6 @@ import com.larswerkman.boxer.internal.BoxerProcessor;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +17,7 @@ public class DataMapWrapper extends Boxer {
 
     private DataMap dataMap;
 
-    protected DataMapWrapper(Object object) {
+    public DataMapWrapper(Object object) {
         super(object);
         dataMap = (DataMap) object;
     }
@@ -279,24 +278,22 @@ public class DataMapWrapper extends Boxer {
 
     @Override
     public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
-        DataMap dataMap = this.dataMap.getDataMap(key);
-        int size = dataMap.getInt("size");
-        T[] boxables = (T[]) Array.newInstance(clazz, size);
-        for(int i = 0; i < size; i++){
-            boxables[i] = retrieveBoxable(dataMap.getDataMap(String.valueOf(i)), clazz);
+        ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
+        T[] boxables = (T[]) Array.newInstance(clazz, dataMaps.size());
+        for(int i = 0; i < dataMaps.size(); i++){
+            boxables[i] = retrieveBoxable(dataMaps.get(i), clazz);
         }
         return boxables;
     }
 
     @Override
     public <T extends Boxable> List<T> getBoxableList(String key, Class<T> clazz, Class<? extends List> listtype) {
-        DataMap dataMap = this.dataMap.getDataMap(key);
-        int size = dataMap.getInt("size");
+        ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
         List<T> boxables = null;
         try {
             boxables = listtype.newInstance();
-            for (int i = 0; i < size; i++) {
-                boxables.add(retrieveBoxable(dataMap.getDataMap(String.valueOf(i)), clazz));
+            for (int i = 0; i < dataMaps.size(); i++) {
+                boxables.add(retrieveBoxable(dataMaps.get(i), clazz));
             }
         } catch (Exception e){};
         return boxables;

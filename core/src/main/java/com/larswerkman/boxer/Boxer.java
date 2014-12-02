@@ -1,6 +1,7 @@
 package com.larswerkman.boxer;
 
 import com.larswerkman.boxer.wrappers.android.BundleWrapper;
+import com.larswerkman.boxer.wrappers.android.DataMapWrapper;
 
 import java.util.List;
 
@@ -26,6 +27,12 @@ public abstract class Boxer {
                 //return new ParcelWrapper(object);
             }
         } catch (ClassNotFoundException e){/*Do nothing*/}
+        try{
+            if(Class.forName("com.google.android.gms.wearable.DataMap")
+                    .isAssignableFrom(object.getClass())){
+                return new DataMapWrapper(object);
+            }
+        } catch (ClassNotFoundException e){}
         return null;
     }
 
