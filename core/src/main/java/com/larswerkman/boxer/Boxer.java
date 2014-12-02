@@ -2,9 +2,6 @@ package com.larswerkman.boxer;
 
 import com.larswerkman.boxer.android.BundleWrapper;
 import com.larswerkman.boxer.android.ParcelWrapper;
-import com.larswerkman.boxer.annotations.Box;
-import sun.jvm.hotspot.runtime.Bytes;
-
 import java.util.List;
 
 /**
@@ -80,45 +77,45 @@ public abstract class Boxer {
      */
     public abstract <T extends Boxable> T getBoxable(String key, Class<T> clazz);
     public abstract <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz);
-    public abstract <T extends Boxable> List<T> getBoxableList(String key, Class<T> clazz);
+    public abstract <T extends Boxable> List<T> getBoxableList(String key, Class<T> clazz, Class<? extends List> listtype);
 
     public abstract <T extends Enum> T getEnum(String key, Class<T> clazz);
     public abstract <T extends Enum> T[] getEnumArray(String key, Class<T> clazz);
-    public abstract <T extends Enum> List<T> getEnumList(String key, Class<T> clazz);
+    public abstract <T extends Enum> List<T> getEnumList(String key, Class<T> clazz, Class<? extends List> listtype);
 
     public abstract String getString(String key);
     public abstract String[] getStringArray(String key);
-    public abstract List<String> getStringList(String key);
+    public abstract List<String> getStringList(String key, Class<? extends List> listtype);
 
     public abstract boolean getBoolean(String key);
     public abstract boolean[] getBooleanArray(String key);
-    public abstract List<Boolean> getBooleanList(String key);
+    public abstract List<Boolean> getBooleanList(String key, Class<? extends List> listtype);
 
     public abstract byte getByte(String key);
     public abstract byte[] getByteArray(String key);
-    public abstract List<Byte> getByteList(String key);
+    public abstract List<Byte> getByteList(String key, Class<? extends List> listtype);
 
     public abstract char getChar(String key);
     public abstract char[] getCharArray(String key);
-    public abstract List<Character> getCharList(String key);
+    public abstract List<Character> getCharList(String key, Class<? extends List> listtype);
 
     public abstract short getShort(String key);
     public abstract short[] getShortArray(String key);
-    public abstract List<Short> getShortList(String key);
+    public abstract List<Short> getShortList(String key, Class<? extends List> listtype);
 
     public abstract int getInt(String key);
     public abstract int[] getIntArray(String key);
-    public abstract List<Integer> getIntList(String key);
+    public abstract List<Integer> getIntList(String key, Class<? extends List> listtype);
 
     public abstract long getLong(String key);
     public abstract long[] getLongArray(String key);
-    public abstract List<Long> getLongList(String key);
+    public abstract List<Long> getLongList(String key, Class<? extends List> listtype);
 
     public abstract double getDouble(String key);
     public abstract double[] getDoubleArray(String key);
-    public abstract List<Double> getDoubleList(String key);
+    public abstract List<Double> getDoubleList(String key, Class<? extends List> listtype);
 
     public abstract float getFloat(String key);
     public abstract float[] getFloatArray(String key);
-    public abstract List<Float> getFloatList(String key);
+    public abstract List<Float> getFloatList(String key, Class<? extends List> listtype);
 }

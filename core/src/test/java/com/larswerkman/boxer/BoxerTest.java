@@ -12,15 +12,14 @@ public class BoxerTest {
     @org.junit.Test
     public void test(){
         Boxer boxer = Boxer.from(new Bundle());
-        new Bundle().
 
         /*Pack bigCodeChew = new Pack("Big Code Chew");
         bigCodeChew.fill(20);
         bigCodeChew.eat();*/
 
-        boxer.addBoxable("chew", new Chew(2, 3, 2.5, Chew.Flavour.MINT));
+        /*boxer.addBoxable("chew", new Chew(2, 3, 2.5, Chew.Flavour.MINT));
         Chew storedChew = boxer.get("chew", Chew.class);
 
-        Assert.assertEquals(new Chew(2, 3, 2.5, Chew.Flavour.MINT), storedChew);
+        Assert.assertEquals(new Chew(2, 3, 2.5, Chew.Flavour.MINT), storedChew);*/
     }
 }

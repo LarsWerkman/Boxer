@@ -5,7 +5,9 @@ import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
 import com.larswerkman.boxer.internal.BoxerProcessor;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -20,336 +22,38 @@ public class BundleWrapper extends Boxer {
         bundle = (Bundle) object;
     }
 
-    @Override
-    public <T extends Boxable> void addBoxable(String key, T value) {
+    private <T extends Boxable> Bundle storeBoxable(T value){
         Bundle bundle = new Bundle();
         try {
             Class boxer = Class.forName(value.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
             Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, value.getClass(), Boxer.class);
             method.invoke(null, value, new BundleWrapper(new Bundle()));
         } catch (Exception e){}
-        this.bundle.putBundle(key, bundle);
+        return bundle;
+    }
+
+    @Override
+    public <T extends Boxable> void addBoxable(String key, T value) {
+        this.bundle.putBundle(key, storeBoxable(value));
     }
 
     @Override
     public <T extends Boxable> void addBoxableList(String key, List<T> value) {
-
+        Bundle bundle = new Bundle();
+        bundle.putInt("size", value.size());
+        for(int i = 0; i < value.size(); i++){
+            bundle.putBundle(String.valueOf(i), storeBoxable(value.get(i)));
+        }
+        this.bundle.putBundle(key, bundle);
     }
 
     @Override
     public <T extends Boxable> void addBoxableArray(String key, T[] value) {
-
-    }
-
-    @Override
-    public void addEnum(String key, Enum value) {
-
-    }
-
-    @Override
-    public void addEnumArray(String key, Enum[] value) {
-
-    }
-
-    @Override
-    public void addEnumList(String key, List<Enum> value) {
-
-    }
-
-    @Override
-    public void addBoolean(String key, boolean value) {
-
-    }
-
-    @Override
-    public void addBooleanArray(String key, boolean[] value) {
-
-    }
-
-    @Override
-    public void addBooleanList(String key, List<Boolean> value) {
-
-    }
-
-    @Override
-    public void addByte(String key, byte value) {
-
-    }
-
-    @Override
-    public void addByteArray(String key, byte[] value) {
-
-    }
-
-    @Override
-    public void addByteList(String key, List<Byte> value) {
-
-    }
-
-    @Override
-    public void addChar(String key, char value) {
-
-    }
-
-    @Override
-    public void addCharArray(String key, char[] value) {
-
-    }
-
-    @Override
-    public void addCharList(String key, List<Character> value) {
-
-    }
-
-    @Override
-    public void addShort(String key, short value) {
-
-    }
-
-    @Override
-    public void addShortArray(String key, short[] value) {
-
-    }
-
-    @Override
-    public void addShortList(String key, List<Short> value) {
-
-    }
-
-    @Override
-    public void addInt(String key, int value) {
-
-    }
-
-    @Override
-    public void addIntArray(String key, int[] value) {
-
-    }
-
-    @Override
-    public void addIntList(String key, List<Integer> value) {
-
-    }
-
-    @Override
-    public void addLong(String key, long value) {
-
-    }
-
-    @Override
-    public void addLongArray(String key, long[] value) {
-
-    }
-
-    @Override
-    public void addLongList(String key, List<Long> value) {
-
-    }
-
-    @Override
-    public void addDouble(String key, double value) {
-
-    }
-
-    @Override
-    public void addDoubleArray(String key, double[] value) {
-
-    }
-
-    @Override
-    public void addDoubleList(String key, List<Double> value) {
-
-    }
-
-    @Override
-    public void addFloat(String key, float value) {
-
-    }
-
-    @Override
-    public void addFloatArray(String key, float[] value) {
-
-    }
-
-    @Override
-    public void addFloatList(String key, List<Float> value) {
-
-    }
-
-    @Override
-    public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        return null;
-    }
-
-    @Override
-    public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
-        return null;
-    }
-
-    @Override
-    public <T extends Boxable> List<T> getBoxableList(String key, Class<T> clazz) {
-        return null;
-    }
-
-    @Override
-    public <T extends Enum> T getEnum(String key, Class<T> clazz) {
-        return null;
-    }
-
-    @Override
-    public <T extends Enum> T[] getEnumArray(String key, Class<T> clazz) {
-        return null;
-    }
-
-    @Override
-    public <T extends Enum> List<T> getEnumList(String key, Class<T> clazz) {
-        return null;
-    }
-
-    @Override
-    public String getString(String key) {
-        return null;
-    }
-
-    @Override
-    public String[] getStringArray(String key) {
-        return new String[0];
-    }
-
-    @Override
-    public List<String> getStringList(String key) {
-        return null;
-    }
-
-    @Override
-    public boolean getBoolean(String key) {
-        return false;
-    }
-
-    @Override
-    public boolean[] getBooleanArray(String key) {
-        return new boolean[0];
-    }
-
-    @Override
-    public List<Boolean> getBooleanList(String key) {
-        return null;
-    }
-
-    @Override
-    public byte getByte(String key) {
-        return 0;
-    }
-
-    @Override
-    public byte[] getByteArray(String key) {
-        return new byte[0];
-    }
-
-    @Override
-    public List<Byte> getByteList(String key) {
-        return null;
-    }
-
-    @Override
-    public char getChar(String key) {
-        return 0;
-    }
-
-    @Override
-    public char[] getCharArray(String key) {
-        return new char[0];
-    }
-
-    @Override
-    public List<Character> getCharList(String key) {
-        return null;
-    }
-
-    @Override
-    public short getShort(String key) {
-        return 0;
-    }
-
-    @Override
-    public short[] getShortArray(String key) {
-        return new short[0];
-    }
-
-    @Override
-    public List<Short> getShortList(String key) {
-        return null;
-    }
-
-    @Override
-    public int getInt(String key) {
-        return 0;
-    }
-
-    @Override
-    public int[] getIntArray(String key) {
-        return new int[0];
-    }
-
-    @Override
-    public List<Integer> getIntList(String key) {
-        return null;
-    }
-
-    @Override
-    public long getLong(String key) {
-        return 0;
-    }
-
-    @Override
-    public long[] getLongArray(String key) {
-        return new long[0];
-    }
-
-    @Override
-    public List<Long> getLongList(String key) {
-        return null;
-    }
-
-    @Override
-    public double getDouble(String key) {
-        return 0;
-    }
-
-    @Override
-    public double[] getDoubleArray(String key) {
-        return new double[0];
-    }
-
-    @Override
-    public List<Double> getDoubleList(String key) {
-        return null;
-    }
-
-    @Override
-    public float getFloat(String key) {
-        return 0;
-    }
-
-    @Override
-    public float[] getFloatArray(String key) {
-        return new float[0];
-    }
-
-    @Override
-    public List<Float> getFloatList(String key) {
-        return null;
-    }
-
-    /*
-    @Override
-    public <T extends Boxable> void addBoxable(String key, T value) {
         Bundle bundle = new Bundle();
-        try {
-            Class boxer = Class.forName(value.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, value.getClass(), Boxer.class);
-            method.invoke(null, value, new BundleWrapper(new Bundle()));
-        } catch (Exception e){*//*TODO not empty constructor for T class*//*}
+        bundle.putInt("size", value.length);
+        for(int i = 0; i < value.length; i++){
+            bundle.putBundle(String.valueOf(i), storeBoxable(value[i]));
+        }
         this.bundle.putBundle(key, bundle);
     }
 
@@ -359,23 +63,454 @@ public class BundleWrapper extends Boxer {
     }
 
     @Override
-    public <T extends Boxable> T get(String key, Class<T> clazz) {
+    public void addEnumArray(String key, Enum[] value) {
+        String[] strings = new String[value.length];
+        for(int i = 0; i < strings.length; i++){
+            strings[i] = value[i].name();
+        }
+        bundle.putStringArray(key, strings);
+    }
+
+    @Override
+    public void addEnumList(String key, List<Enum> value) {
+        String[] strings = new String[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            strings[i] = value.get(i).name();
+        }
+        bundle.putStringArray(key, strings);
+    }
+
+    @Override
+    public void addBoolean(String key, boolean value) {
+        this.bundle.putBoolean(key, value);
+    }
+
+    @Override
+    public void addBooleanArray(String key, boolean[] value) {
+        this.bundle.putBooleanArray(key, value);
+    }
+
+    @Override
+    public void addBooleanList(String key, List<Boolean> value) {
+        boolean[] bools = new boolean[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            bools[i] = value.get(i);
+        }
+        this.bundle.putBooleanArray(key, bools);
+    }
+
+    @Override
+    public void addByte(String key, byte value) {
+        this.bundle.putByte(key, value);
+    }
+
+    @Override
+    public void addByteArray(String key, byte[] value) {
+        this.bundle.putByteArray(key, value);
+    }
+
+    @Override
+    public void addByteList(String key, List<Byte> value) {
+        byte[] bytes = new byte[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            bytes[i] = value.get(i);
+        }
+        this.bundle.putByteArray(key, bytes);
+    }
+
+    @Override
+    public void addChar(String key, char value) {
+        this.bundle.putChar(key, value);
+    }
+
+    @Override
+    public void addCharArray(String key, char[] value) {
+        this.bundle.putCharArray(key, value);
+    }
+
+    @Override
+    public void addCharList(String key, List<Character> value) {
+        char[] chars = new char[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            chars[i] = value.get(i);
+        }
+        this.bundle.putCharArray(key, chars);
+    }
+
+    @Override
+    public void addShort(String key, short value) {
+        this.bundle.putShort(key, value);
+    }
+
+    @Override
+    public void addShortArray(String key, short[] value) {
+        this.bundle.putShortArray(key, value);
+    }
+
+    @Override
+    public void addShortList(String key, List<Short> value) {
+        short[] shorts = new short[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            shorts[i] = value.get(i);
+        }
+        this.bundle.putShortArray(key, shorts);
+    }
+
+    @Override
+    public void addInt(String key, int value) {
+         this.bundle.putInt(key, value);
+    }
+
+    @Override
+    public void addIntArray(String key, int[] value) {
+        this.bundle.putIntArray(key, value);
+    }
+
+    @Override
+    public void addIntList(String key, List<Integer> value) {
+        int[] ints = new int[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            ints[i] = value.get(i);
+        }
+        this.bundle.putIntArray(key, ints);
+    }
+
+    @Override
+    public void addLong(String key, long value) {
+        this.bundle.putLong(key, value);
+    }
+
+    @Override
+    public void addLongArray(String key, long[] value) {
+        this.bundle.putLongArray(key, value);
+    }
+
+    @Override
+    public void addLongList(String key, List<Long> value) {
+        long[] longs = new long[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            longs[i] = value.get(i);
+        }
+        this.bundle.putLongArray(key, longs);
+    }
+
+    @Override
+    public void addDouble(String key, double value) {
+        this.bundle.putDouble(key, value);
+    }
+
+    @Override
+    public void addDoubleArray(String key, double[] value) {
+        this.bundle.putDoubleArray(key, value);
+    }
+
+    @Override
+    public void addDoubleList(String key, List<Double> value) {
+        double[] doubles = new double[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            doubles[i] = value.get(i);
+        }
+        this.bundle.putDoubleArray(key, doubles);
+    }
+
+    @Override
+    public void addFloat(String key, float value) {
+        this.bundle.putFloat(key, value);
+    }
+
+    @Override
+    public void addFloatArray(String key, float[] value) {
+        this.bundle.putFloatArray(key, value);
+    }
+
+    @Override
+    public void addFloatList(String key, List<Float> value) {
+        float[] floats = new float[value.size()];
+        for(int i = 0; i < value.size(); i++){
+            floats[i] = value.get(i);
+        }
+        this.bundle.putFloatArray(key, floats);
+    }
+
+    public <T extends Boxable> T retrieveBoxable(Bundle bundle, Class<T> clazz){
         try {
             Class boxer = Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
             Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
-            return (T) method.invoke(null, new BundleWrapper(bundle.getBundle(key)));
+            return (T) method.invoke(null, new BundleWrapper(bundle));
         } catch (Exception e){};
         return null;
     }
 
     @Override
-    public <T extends Enum> T getEnum(String key, Class<T> clazz) {
+    public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
+        return retrieveBoxable(this.bundle.getBundle(key), clazz);
+    }
+
+    @Override
+    public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
+        Bundle bundle = this.bundle.getBundle(key);
+        int size = bundle.getInt("size");
+        T[] boxables = (T[]) Array.newInstance(clazz, size);
+        for(int i = 0; i < size; i++){
+            boxables[i] = retrieveBoxable(bundle.getBundle(String.valueOf(i)), clazz);
+        }
+        return boxables;
+    }
+
+    @Override
+    public <T extends Boxable> List<T> getBoxableList(String key, Class<T> clazz, Class<? extends List> listtype) {
+        Bundle bundle = this.bundle.getBundle(key);
+        int size = bundle.getInt("size");
+        List<T> boxables = null;
+        try {
+            boxables = listtype.newInstance();
+            for (int i = 0; i < size; i++) {
+                boxables.add(retrieveBoxable(bundle.getBundle(String.valueOf(i)), clazz));
+            }
+        } catch (Exception e){};
+        return boxables;
+    }
+
+    public <T extends Enum> T retrieveEnum(String value, Class<T> clazz){
         try{
             Method method = clazz.getMethod("valueOf", String.class);
-            return (T) method.invoke(null, bundle.getString(key));
+            return (T) method.invoke(null, value);
         } catch (Exception e){}
         return null;
-    }*/
+    }
 
+    @Override
+    public <T extends Enum> T getEnum(String key, Class<T> clazz) {
+        return retrieveEnum(this.bundle.getString(key), clazz);
+    }
 
+    @Override
+    public <T extends Enum> T[] getEnumArray(String key, Class<T> clazz) {
+        String[] values = this.bundle.getStringArray(key);
+        T[] enums = (T[]) Array.newInstance(clazz, values.length);
+        for(int i = 0; i < values.length; i++){
+            enums[i] = retrieveEnum(values[i], clazz);
+        }
+        return enums;
+    }
+
+    @Override
+    public <T extends Enum> List<T> getEnumList(String key, Class<T> clazz, Class<? extends List> listtype) {
+        String[] values = this.bundle.getStringArray(key);
+        List<T> enums = null;
+        try {
+            enums = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                enums.add(retrieveEnum(values[i], clazz));
+            }
+        } catch (Exception e){};
+        return enums;
+    }
+
+    @Override
+    public String getString(String key) {
+        return this.bundle.getString(key);
+    }
+
+    @Override
+    public String[] getStringArray(String key) {
+        return this.bundle.getStringArray(key);
+    }
+
+    @Override
+    public List<String> getStringList(String key, Class<? extends List> listtype) {
+        String[] values = this.bundle.getStringArray(key);
+        List<String> strings = null;
+        try {
+            strings = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                strings.add(values[i]);
+            }
+        } catch (Exception e){};
+        return strings;
+    }
+
+    @Override
+    public boolean getBoolean(String key) {
+        return this.bundle.getBoolean(key);
+    }
+
+    @Override
+    public boolean[] getBooleanArray(String key) {
+        return this.bundle.getBooleanArray(key);
+    }
+
+    @Override
+    public List<Boolean> getBooleanList(String key, Class<? extends List> listtype) {
+        boolean[] values = this.bundle.getBooleanArray(key);
+        List<Boolean> booleans = null;
+        try {
+            booleans = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                booleans.add(values[i]);
+            }
+        } catch (Exception e){};
+        return booleans;
+    }
+
+    @Override
+    public byte getByte(String key) {
+        return this.bundle.getByte(key);
+    }
+
+    @Override
+    public byte[] getByteArray(String key) {
+        return this.bundle.getByteArray(key);
+    }
+
+    @Override
+    public List<Byte> getByteList(String key, Class<? extends List> listtype) {
+        byte[] values = this.bundle.getByteArray(key);
+        List<Byte> bytes = null;
+        try {
+            bytes = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                bytes.add(values[i]);
+            }
+        } catch (Exception e){};
+        return bytes;
+    }
+
+    @Override
+    public char getChar(String key) {
+        return this.bundle.getChar(key);
+    }
+
+    @Override
+    public char[] getCharArray(String key) {
+        return this.bundle.getCharArray(key);
+    }
+
+    @Override
+    public List<Character> getCharList(String key, Class<? extends List> listtype) {
+        char[] values = this.bundle.getCharArray(key);
+        List<Character> chars = null;
+        try {
+            chars = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                chars.add(values[i]);
+            }
+        } catch (Exception e){};
+        return chars;
+    }
+
+    @Override
+    public short getShort(String key) {
+        return this.bundle.getShort(key);
+    }
+
+    @Override
+    public short[] getShortArray(String key) {
+        return this.bundle.getShortArray(key);
+    }
+
+    @Override
+    public List<Short> getShortList(String key, Class<? extends List> listtype) {
+        short[] values = this.bundle.getShortArray(key);
+        List<Short> shorts = null;
+        try {
+            shorts = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                shorts.add(values[i]);
+            }
+        } catch (Exception e){};
+        return shorts;
+    }
+
+    @Override
+    public int getInt(String key) {
+        return this.bundle.getInt(key);
+    }
+
+    @Override
+    public int[] getIntArray(String key) {
+        return this.bundle.getIntArray(key);
+    }
+
+    @Override
+    public List<Integer> getIntList(String key, Class<? extends List> listtype) {
+        int[] values = this.bundle.getIntArray(key);
+        List<Integer> ints = null;
+        try {
+            ints = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                ints.add(values[i]);
+            }
+        } catch (Exception e){};
+        return ints;
+    }
+
+    @Override
+    public long getLong(String key) {
+        return this.bundle.getLong(key);
+    }
+
+    @Override
+    public long[] getLongArray(String key) {
+        return this.bundle.getLongArray(key);
+    }
+
+    @Override
+    public List<Long> getLongList(String key, Class<? extends List> listtype) {
+        long[] values = this.bundle.getLongArray(key);
+        List<Long> longs = null;
+        try {
+            longs = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                longs.add(values[i]);
+            }
+        } catch (Exception e){};
+        return longs;
+    }
+
+    @Override
+    public double getDouble(String key) {
+        return this.bundle.getDouble(key);
+    }
+
+    @Override
+    public double[] getDoubleArray(String key) {
+        return this.bundle.getDoubleArray(key);
+    }
+
+    @Override
+    public List<Double> getDoubleList(String key, Class<? extends List> listtype) {
+        double[] values = this.bundle.getDoubleArray(key);
+        List<Double> doubles = null;
+        try {
+            doubles = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                doubles.add(values[i]);
+            }
+        } catch (Exception e){};
+        return doubles;
+    }
+
+    @Override
+    public float getFloat(String key) {
+        return this.bundle.getFloat(key);
+    }
+
+    @Override
+    public float[] getFloatArray(String key) {
+        return this.bundle.getFloatArray(key);
+    }
+
+    @Override
+    public List<Float> getFloatList(String key, Class<? extends List> listtype) {
+        float[] values = this.bundle.getFloatArray(key);
+        List<Float> floats = null;
+        try {
+            floats = listtype.newInstance();
+            for (int i = 0; i < values.length; i++) {
+                floats.add(values[i]);
+            }
+        } catch (Exception e){};
+        return floats;
+    }
 }

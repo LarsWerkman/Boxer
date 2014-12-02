@@ -14,23 +14,23 @@ import java.lang.reflect.Method;
  * Parcel should only be used when you don't
  * change the order you read and write to it.
  */
-public class ParcelWrapper extends Boxer {
+public class ParcelWrapper {
 
     Parcel parcel;
 
     public ParcelWrapper(Object object){
-        super(object);
+        //super(object);
         parcel = (Parcel) object;
     }
 
-    @Override
+    /*@Override
     public <T extends Boxable> void addBoxable(String key, T value) {
         Bundle bundle = new Bundle();
         try {
             Class boxer = Class.forName(value.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
             Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, value.getClass(), Boxer.class);
             method.invoke(null, value, this);
-        } catch (Exception e){/*TODO not empty constructor for T class*/}
+        } catch (Exception e){*//*TODO not empty constructor for T class*//*}
     }
 
     @Override
@@ -145,5 +145,5 @@ public class ParcelWrapper extends Boxer {
     @Override
     public float getFloat(String key) {
         return parcel.readFloat();
-    }
+    }*/
 }
