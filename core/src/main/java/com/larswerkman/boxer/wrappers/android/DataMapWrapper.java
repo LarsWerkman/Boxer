@@ -263,12 +263,13 @@ public class DataMapWrapper extends Boxer {
     }
 
     public <T extends Boxable> T retrieveBoxable(DataMap dataMap, Class<T> clazz){
+        T boxable = null;
         try {
             Class boxer = Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
             Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
-            return (T) method.invoke(null, new DataMapWrapper(dataMap));
+            boxable = (T) method.invoke(null, new DataMapWrapper(dataMap));
         } catch (Exception e){};
-        return null;
+        return boxable;
     }
 
     @Override
@@ -300,11 +301,12 @@ public class DataMapWrapper extends Boxer {
     }
 
     public <T extends Enum> T retrieveEnum(String value, Class<T> clazz){
+        T en = null;
         try{
             Method method = clazz.getMethod("valueOf", String.class);
-            return (T) method.invoke(null, value);
+            en = (T) method.invoke(null, value);
         } catch (Exception e){}
-        return null;
+        return en;
     }
 
     @Override
