@@ -2,6 +2,7 @@ package com.larswerkman.boxer;
 
 import com.larswerkman.boxer.wrappers.android.BundleWrapper;
 import com.larswerkman.boxer.wrappers.android.DataMapWrapper;
+import com.larswerkman.boxer.wrappers.android.ParcelWrapper;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public abstract class Boxer {
         try{
             if(Class.forName("android.os.Parcel")
                     .isAssignableFrom(object.getClass())){
-                //return new ParcelWrapper(object);
+                return new ParcelWrapper(object);
             }
         } catch (ClassNotFoundException e){/*Do nothing*/}
         try{
