@@ -199,7 +199,7 @@ public class BoxerProcessor extends AbstractProcessor {
             String simple = original + CLASS_EXTENSION;
             String qualified = originalQualified + CLASS_EXTENSION;
 
-            JavaFileObject jfo = filer.createSourceFile(qualified);
+            JavaFileObject jfo = filer.createSourceFile(qualified, classElement);
             JavaWriter writer = new JavaWriter(jfo.openWriter());
             writer.emitPackage(getPackage(classElement))
                     .emitImports(Boxer.class.getName(), List.class.getName(), ArrayList.class.getName(), originalQualified)
