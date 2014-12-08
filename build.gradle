@@ -1,12 +1,4 @@
-apply plugin: 'java'
-
-version = '1.0'
-
 allprojects {
-
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
-
     repositories {
         mavenCentral()
     }
