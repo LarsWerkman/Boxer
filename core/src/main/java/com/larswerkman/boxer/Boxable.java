@@ -15,10 +15,9 @@
  */
 package com.larswerkman.boxer;
 
-import java.util.HashMap;
-
 /**
- * Created by lars on 13-11-14.
+ * Boxable interface defining that a class is Boxable,
+ * should always be used in combination with the {@link com.larswerkman.boxer.annotations.Box} annotation.
  */
 public interface Boxable {
 }
