@@ -1,0 +1,73 @@
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+dependencies {
+    compile 'com.squareup:javawriter:2.5.0'
+
+    //Provided library's to compile against
+    provided 'com.google.android:android:4.1.1.4'
+    provided fileTree(dir: 'libs', include: ['*.jar'])
+}
+
+group = 'com.larswerkman'
+version = '0.0.1'
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+
+            pom.project {
+                name 'Boxer'
+                packaging 'jar'
+                description 'Annotation based serialization for java frameworks'
+                url 'https://github.com/LarsWerkman/Boxer'
+
+                scm {
+                    url 'scm:git@github.com:LarsWerkman/Boxer.git'
+                    connection 'scm:git@github.com:LarsWerkman/Boxer.git'
+                    developerConnection 'scm:git@github.com:LarsWerkman/Boxer.git'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'larswerkman'
+                        name 'Lars Werkman'
+                    }
+                }
+            }
+        }
+    }
+}
