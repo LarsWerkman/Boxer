@@ -78,7 +78,7 @@ Adding it as a dependency to your project.
 
 ```groovy
 dependencies {
-    compile 'com.larswerkman:Boxer:0.0.1'
+    compile 'com.larswerkman:boxer:0.0.1'
 }
 ```
 License
