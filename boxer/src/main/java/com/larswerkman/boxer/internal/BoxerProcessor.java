@@ -37,7 +37,6 @@ import java.util.*;
 /**
  * Annotation Processor for processing the {@link com.larswerkman.boxer.annotations.Box} annotation
  */
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedAnnotationTypes("com.larswerkman.boxer.annotations.Box")
 public class BoxerProcessor extends AbstractProcessor {
 
@@ -218,7 +217,6 @@ public class BoxerProcessor extends AbstractProcessor {
             JavaWriter writer = new JavaWriter(jfo.openWriter());
             writer.emitPackage(getPackage(classElement))
                     .emitImports(Boxer.class.getName(), List.class.getName(), ArrayList.class.getName(), originalQualified)
-                    .emitAnnotation(Generated.class, JavaWriter.stringLiteral(getClass().getCanonicalName()))
                     .beginType(simple, "class", EnumSet.of(Modifier.PUBLIC, Modifier.FINAL))
                     .beginMethod("void", METHOD_WRITE, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), original, "boxable", "Boxer", "boxer");
             for (PackedField field : fields) {
@@ -418,5 +416,10 @@ public class BoxerProcessor extends AbstractProcessor {
 
     private String capitalize(String string) {
         return string.substring(0, 1).toUpperCase() + string.substring(1);
+    }
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latestSupported();
     }
 }

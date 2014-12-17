@@ -44,7 +44,7 @@ uploadArchives {
             pom.project {
                 name 'Boxer'
                 packaging 'jar'
-                description 'Annotation based serialization for java frameworks'
+                description 'Annotation based serialization for java and Android'
                 url 'https://github.com/LarsWerkman/Boxer'
 
                 scm {
