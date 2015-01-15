@@ -21,6 +21,10 @@ public class Example implements Boxable {
 
     @Packet
     public double weight;
+    
+    @Packet
+    @Wrap(Stack.class)
+    public List<Example> stack;
 
     //Empty constructor for Injection
     public Example(){
