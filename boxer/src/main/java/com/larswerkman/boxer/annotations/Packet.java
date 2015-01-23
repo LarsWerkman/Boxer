@@ -22,8 +22,11 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation that defines which fields should be serialized.
+ *
+ * @deprecated isn't necessary anymore to mark a field for serialization
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.SOURCE)
+@Deprecated
 public @interface Packet {
 }

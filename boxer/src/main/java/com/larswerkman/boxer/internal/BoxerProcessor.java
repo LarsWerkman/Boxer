@@ -17,11 +17,9 @@ package com.larswerkman.boxer.internal;
 
 import com.larswerkman.boxer.Boxer;
 import com.larswerkman.boxer.annotations.Box;
-import com.larswerkman.boxer.annotations.Packet;
 import com.larswerkman.boxer.annotations.Wrap;
 import com.squareup.javawriter.JavaWriter;
 
-import javax.annotation.Generated;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
@@ -94,101 +92,105 @@ public class BoxerProcessor extends AbstractProcessor {
                 List<? extends Element> enclosedElements = typeElement.getEnclosedElements();
                 for (Element child : enclosedElements) {
 
-                    //Check if the child element has a Packet Annotation
-                    Packet annotation = child.getAnnotation(Packet.class);
-                    if (annotation != null) {
-                        String name = child.getSimpleName().toString();
+                    //Retrieve name of field
+                    String name = child.getSimpleName().toString();
 
-                        //Find out of the child element is accessible
-                        Modifier modifier = null;
-                        for (Modifier mod : child.getModifiers()) {
-                            if (mod == Modifier.PUBLIC) {
-                                modifier = mod;
-                            } else if (mod == Modifier.PRIVATE || mod == Modifier.PROTECTED) {
-                                boolean getter = false;
-                                boolean setter = false;
-                                List<ExecutableElement> methods = ElementFilter.methodsIn(typeElement.getEnclosedElements());
-                                for (ExecutableElement method : methods) {
-                                    if (method.getSimpleName().contentEquals(String.format("get%s", capitalize(name)))
-                                            && method.getParameters().size() == 0
-                                            && typeUtils.isAssignable(method.getReturnType(), child.asType())) {
-                                        getter = true;
-                                        continue;
-                                    }
+                    //Check if the field contains a transient modifier, in which case we should ignore this field.
+                    if(child.getModifiers().contains(Modifier.TRANSIENT)){
+                        break;
+                    }
 
-                                    if (method.getSimpleName().contentEquals(String.format("set%s", capitalize(name)))
-                                            && method.getParameters().size() == 1
-                                            && typeUtils.isAssignable(method.getParameters().get(0).asType(), child.asType())) {
-                                        setter = true;
-                                    }
+                    //Find out of the child element is accessible
+                    Modifier modifier = null;
+                    for (Modifier mod : child.getModifiers()) {
+                        if (mod == Modifier.PUBLIC) {
+                            modifier = mod;
+                        } else if (mod == Modifier.PRIVATE || mod == Modifier.PROTECTED) {
+                            boolean getter = false;
+                            boolean setter = false;
+                            List<ExecutableElement> methods = ElementFilter.methodsIn(typeElement.getEnclosedElements());
+                            for (ExecutableElement method : methods) {
+                                if (method.getSimpleName().contentEquals(String.format("get%s", capitalize(name)))
+                                        && method.getParameters().size() == 0
+                                        && typeUtils.isAssignable(method.getReturnType(), child.asType())) {
+                                    getter = true;
+                                    continue;
                                 }
-                                if (!getter || !setter) {
-                                    log.printMessage(Diagnostic.Kind.ERROR,
-                                            String.format("%s @Packet fied have default getter and setter methods or should be public",
-                                                    child.getSimpleName()));
-                                    return true;
+
+                                if (method.getSimpleName().contentEquals(String.format("set%s", capitalize(name)))
+                                        && method.getParameters().size() == 1
+                                        && typeUtils.isAssignable(method.getParameters().get(0).asType(), child.asType())) {
+                                    setter = true;
                                 }
-                                modifier = mod;
-                            } else if (mod == Modifier.FINAL) {
+                            }
+                            if (!getter || !setter) {
                                 log.printMessage(Diagnostic.Kind.ERROR,
-                                        String.format("%s @Packet fied cannot be final",
-                                                child.getSimpleName())
-                                );
+                                        String.format("%s field should have default getter and setter methods or should be public",
+                                                child.getSimpleName()));
                                 return true;
                             }
-                        }
-
-                        //Check if @Packet annotated field as has @Wrap annotation
-                        Wrap wrap = child.getAnnotation(Wrap.class);
-                        TypeMirror wrapType = null;
-                        if (wrap != null) {
-                            try {
-                                wrap.value();
-                            } catch (MirroredTypeException e) {
-                                wrapType = e.getTypeMirror();
-                                if (!typeUtils.isAssignable(wrapType, child.asType())) {
-                                    log.printMessage(Diagnostic.Kind.ERROR,
-                                            String.format("%s @Wrap annotated value %s is not assignable from %s",
-                                                    child.getSimpleName(), wrapType.toString(), child.asType().toString())
-                                    );
-                                    return true;
-                                }
-                            }
-                        }
-
-                        //Check if the field type is acceptable
-                        TypeMirror type = child.asType();
-                        if (isAcceptable(type) || isEnum(type)) {
-                            fields.add(new PackedField(name, type, modifier, false, wrapType));
-                        } else if (isArray(type)) {
-                            TypeMirror arrayType = getTypeOfArray(type);
-                            if (arrayType != null) {
-                                if (isAcceptable(arrayType)) {
-                                    fields.add(new PackedField(name, type, modifier, true, wrapType));
-                                } else {
-                                    log.printMessage(Diagnostic.Kind.ERROR,
-                                            String.format("%s @Packed annotation can only be placed on arrays with type of" +
-                                                            ": primitives and wrappers, Enum classes and objects " +
-                                                            "implementing the boxable interface with @Box annotation",
-                                                    child.getSimpleName())
-                                    );
-                                    log.printMessage(Diagnostic.Kind.ERROR, arrayType.toString());
-                                }
-                            } else {
-                                log.printMessage(Diagnostic.Kind.ERROR,
-                                        String.format("%s @Packed annotated array should have an specified type",
-                                                child.getSimpleName())
-                                );
-                                return true;
-                            }
-                        } else {
+                            modifier = mod;
+                        } else if (mod == Modifier.FINAL) {
                             log.printMessage(Diagnostic.Kind.ERROR,
-                                    String.format("%s @Packed annotation can only be placed on: primitives and wrappers," +
-                                                    "Enum classes and objects implementing the boxable interface with @Box annotation",
+                                    String.format("%s fied cannot be final",
                                             child.getSimpleName())
                             );
                             return true;
                         }
+                    }
+
+                    //Check if field contains a @Wrap annotation
+                    Wrap wrap = child.getAnnotation(Wrap.class);
+                    TypeMirror wrapType = null;
+                    if (wrap != null) {
+                        try {
+                            wrap.value();
+                        } catch (MirroredTypeException e) {
+                            wrapType = e.getTypeMirror();
+                            if (!typeUtils.isAssignable(wrapType, child.asType())) {
+                                log.printMessage(Diagnostic.Kind.ERROR,
+                                        String.format("%s @Wrap annotated value %s is not assignable from %s",
+                                                child.getSimpleName(), wrapType.toString(), child.asType().toString())
+                                );
+                                return true;
+                            }
+                        }
+                    }
+
+                    //Check if the field type is acceptable
+                    TypeMirror type = child.asType();
+                    if (isAcceptable(type) || isEnum(type)) {
+                        fields.add(new PackedField(name, type, modifier, false, wrapType));
+                    } else if (isArray(type)) {
+                        TypeMirror arrayType = getTypeOfArray(type);
+                        if (arrayType != null) {
+                            if (isAcceptable(arrayType)) {
+                                fields.add(new PackedField(name, type, modifier, true, wrapType));
+                            } else {
+                                log.printMessage(Diagnostic.Kind.ERROR,
+                                        String.format("%s field can't be resolved, only arrays with type of" +
+                                                        ": primitives and wrappers, Enum classes and objects " +
+                                                        "implementing the boxable interface with the @Box annotation." +
+                                                        " add transient modifier to ignore field.",
+                                                child.getSimpleName())
+                                );
+                                log.printMessage(Diagnostic.Kind.ERROR, arrayType.toString());
+                            }
+                        } else {
+                            log.printMessage(Diagnostic.Kind.ERROR,
+                                    String.format("%s array should have an specified type",
+                                            child.getSimpleName())
+                            );
+                            return true;
+                        }
+                    } else {
+                        log.printMessage(Diagnostic.Kind.ERROR,
+                                String.format("%s field can't be resolved only fields wit the type of: " +
+                                                "primitives and wrappers, Enum classes and objects implementing " +
+                                                "the boxable interface with @Box annotation",
+                                        child.getSimpleName())
+                        );
+                        return true;
                     }
                 }
 
