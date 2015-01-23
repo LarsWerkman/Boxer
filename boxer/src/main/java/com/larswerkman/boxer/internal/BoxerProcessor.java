@@ -38,7 +38,7 @@ import java.util.*;
 @SupportedAnnotationTypes("com.larswerkman.boxer.annotations.Box")
 public class BoxerProcessor extends AbstractProcessor {
 
-    public static final String CLASS_EXTENSION = "Boxer";
+    public static final String CLASS_EXTENSION = "$Boxer";
     public static final String METHOD_READ = "read";
     public static final String METHOD_WRITE = "write";
 
