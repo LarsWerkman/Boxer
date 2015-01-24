@@ -92,13 +92,15 @@ public class BoxerProcessor extends AbstractProcessor {
                 List<? extends Element> enclosedElements = typeElement.getEnclosedElements();
                 for (Element child : enclosedElements) {
 
+                    //Check if its a field and if the field contains a transient modifier,
+                    //in which case we should ignore this field.
+                    if(!child.getKind().isField()
+                            || child.getModifiers().contains(Modifier.TRANSIENT)){
+                        continue;
+                    }
+
                     //Retrieve name of field
                     String name = child.getSimpleName().toString();
-
-                    //Check if the field contains a transient modifier, in which case we should ignore this field.
-                    if(child.getModifiers().contains(Modifier.TRANSIENT)){
-                        break;
-                    }
 
                     //Find out of the child element is accessible
                     Modifier modifier = null;
@@ -218,7 +220,7 @@ public class BoxerProcessor extends AbstractProcessor {
             JavaFileObject jfo = filer.createSourceFile(qualified, classElement);
             JavaWriter writer = new JavaWriter(jfo.openWriter());
             writer.emitPackage(getPackage(classElement))
-                    .emitImports(Boxer.class.getName(), List.class.getName(), ArrayList.class.getName(), originalQualified)
+                    .emitImports(Boxer.class.getName(), List.class.getName(), ArrayList.class.getName())
                     .beginType(simple, "class", EnumSet.of(Modifier.PUBLIC, Modifier.FINAL))
                     .beginMethod("void", METHOD_WRITE, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), original, "boxable", "Boxer", "boxer");
             for (PackedField field : fields) {
