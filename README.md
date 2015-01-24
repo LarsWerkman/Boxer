@@ -6,23 +6,19 @@ by generating boilerplate code.
 
 * Define classes as serializable with the <code>@Box</code> annotation.
 And by implementing the <code>Boxable</code> interface.
-* Serialize fields with the <code>@Packet</code> annotation
+* ~~Serialize fields with the <code>@Packet</code> annotation~~ Depracted
+* By default all fields will be serialized, except fields with the transient modifier
+* the <code>@Wrap</code> annotation will wrap a <code>List</code> fields into the appropriate Subclass. (Subclass needs to have a no-args constructor)
 * Default non-class serialization possible
 
 ```java
 @Box
 public class Example implements Boxable {
 
-    @Packet
     private int height;
-
-    @Packet
-    private int width;
-
-    @Packet
+    private transient int width;
     public double weight;
     
-    @Packet
     @Wrap(Stack.class)
     public List<Example> stack;
 
@@ -67,6 +63,16 @@ Current supported supported classes:
 * (Java/Android) DataMap
 
 __Still in early alpha phase!__
+
+Proguard
+----------
+```groovy
+-dontwarn com.larswerkman.boxer.internal.**
+-dontwarn com.larswerkman.boxer.wrappers.**
+-dontwarn com.squareup.javawriter.JavaWriter
+-keep class **$Boxer { *; }
+-keepnames class * { @com.larswerkman.boxer.annotations.Box *;}
+```
 
 Dependency
 ----------
