@@ -18,7 +18,6 @@ package com.larswerkman.boxer.wrappers.android;
 import android.os.Bundle;
 import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
-import com.larswerkman.boxer.internal.BoxerProcessor;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -33,22 +32,12 @@ public class BundleWrapper extends Boxer {
 
     public BundleWrapper(Object object) {
         super(object);
-        bundle = (Bundle) object;
-    }
-
-    private <T extends Boxable> Bundle storeBoxable(T value){
-        Bundle bundle = new Bundle();
-        try {
-            Class boxer = Class.forName(value.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, value.getClass(), Boxer.class);
-            method.invoke(null, value, new BundleWrapper(bundle));
-        } catch (Exception e){}
-        return bundle;
+        this.bundle = (Bundle) object;
     }
 
     @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
-        this.bundle.putBundle(key, storeBoxable(value));
+        this.bundle.putBundle(key, storeBoxable(getClass(), value, new Bundle()));
     }
 
     @Override
@@ -56,7 +45,7 @@ public class BundleWrapper extends Boxer {
         Bundle bundle = new Bundle();
         bundle.putInt("size", value.size());
         for(int i = 0; i < value.size(); i++){
-            bundle.putBundle(String.valueOf(i), storeBoxable(value.get(i)));
+            bundle.putBundle(String.valueOf(i), storeBoxable(getClass(), value.get(i), new Bundle()));
         }
         this.bundle.putBundle(key, bundle);
     }
@@ -66,7 +55,7 @@ public class BundleWrapper extends Boxer {
         Bundle bundle = new Bundle();
         bundle.putInt("size", value.length);
         for(int i = 0; i < value.length; i++){
-            bundle.putBundle(String.valueOf(i), storeBoxable(value[i]));
+            bundle.putBundle(String.valueOf(i), storeBoxable(getClass(), value[i], new Bundle()));
         }
         this.bundle.putBundle(key, bundle);
     }
@@ -261,19 +250,9 @@ public class BundleWrapper extends Boxer {
         this.bundle.putFloatArray(key, floats);
     }
 
-    public <T extends Boxable> T retrieveBoxable(Bundle bundle, Class<T> clazz){
-        T boxable = null;
-        try {
-            Class boxer = Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
-            boxable = (T) method.invoke(null, new BundleWrapper(bundle));
-        } catch (Exception e){};
-        return boxable;
-    }
-
     @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        return retrieveBoxable(this.bundle.getBundle(key), clazz);
+        return retrieveBoxable(getClass(), clazz, this.bundle.getBundle(key));
     }
 
     @Override
@@ -282,7 +261,7 @@ public class BundleWrapper extends Boxer {
         int size = bundle.getInt("size");
         T[] boxables = (T[]) Array.newInstance(clazz, size);
         for(int i = 0; i < size; i++){
-            boxables[i] = retrieveBoxable(bundle.getBundle(String.valueOf(i)), clazz);
+            boxables[i] = retrieveBoxable(getClass(), clazz, this.bundle.getBundle(String.valueOf(i)));
         }
         return boxables;
     }
@@ -295,13 +274,13 @@ public class BundleWrapper extends Boxer {
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < size; i++) {
-                boxables.add(retrieveBoxable(bundle.getBundle(String.valueOf(i)), clazz));
+                boxables.add(retrieveBoxable(getClass(), clazz, this.bundle.getBundle(String.valueOf(i))));
             }
         } catch (Exception e){};
         return boxables;
     }
 
-    public <T extends Enum> T retrieveEnum(String value, Class<T> clazz){
+    private <T extends Enum> T retrieveEnum(String value, Class<T> clazz){
         T en = null;
         try{
             Method method = clazz.getMethod("valueOf", String.class);

@@ -41,26 +41,16 @@ public class ParcelWrapper extends Boxer {
         parcel = (Parcel) object;
     }
 
-    private <T extends Boxable> Bundle storeBoxable(T value){
-        Bundle bundle = new Bundle();
-        try {
-            Class boxer = Class.forName(value.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, value.getClass(), Boxer.class);
-            method.invoke(null, value, new BundleWrapper(bundle));
-        } catch (Exception e){}
-        return bundle;
-    }
-
     @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
-        this.parcel.writeBundle(storeBoxable(value));
+        this.parcel.writeBundle(storeBoxable(BundleWrapper.class, value, new Bundle()));
     }
 
     @Override
     public <T extends Boxable> void addBoxableList(String key, List<T> value) {
         this.parcel.writeInt(value.size());
         for(T boxable : value) {
-            this.parcel.writeBundle(storeBoxable(boxable));
+            this.parcel.writeBundle(storeBoxable(BundleWrapper.class, boxable, new Bundle()));
         }
     }
 
@@ -68,7 +58,7 @@ public class ParcelWrapper extends Boxer {
     public <T extends Boxable> void addBoxableArray(String key, T[] value) {
         this.parcel.writeInt(value.length);
         for(T boxable : value) {
-            this.parcel.writeBundle(storeBoxable(boxable));
+            this.parcel.writeBundle(storeBoxable(BundleWrapper.class, boxable, new Bundle()));
         }
     }
 
@@ -266,19 +256,9 @@ public class ParcelWrapper extends Boxer {
         this.parcel.writeFloatArray(floats);
     }
 
-    public <T extends Boxable> T retrieveBoxable(Bundle bundle, Class<T> clazz){
-        T boxable = null;
-        try {
-            Class boxer = Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
-            boxable = (T) method.invoke(null, new BundleWrapper(bundle));
-        } catch (Exception e){};
-        return boxable;
-    }
-
     @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        return retrieveBoxable(this.parcel.readBundle(), clazz);
+        return retrieveBoxable(BundleWrapper.class, clazz, this.parcel.readBundle());
     }
 
     @Override
@@ -286,7 +266,7 @@ public class ParcelWrapper extends Boxer {
         int size = this.parcel.readInt();
         T[] boxables = (T[]) Array.newInstance(clazz, size);
         for(int i = 0; i < size; i++){
-            boxables[i] = retrieveBoxable(this.parcel.readBundle(), clazz);
+            boxables[i] = retrieveBoxable(BundleWrapper.class, clazz, this.parcel.readBundle());
         }
         return boxables;
     }
@@ -298,7 +278,7 @@ public class ParcelWrapper extends Boxer {
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < size; i++) {
-                boxables.add(retrieveBoxable(this.parcel.readBundle(), clazz));
+                boxables.add(retrieveBoxable(BundleWrapper.class, clazz, this.parcel.readBundle()));
             }
         } catch (Exception e){};
         return boxables;

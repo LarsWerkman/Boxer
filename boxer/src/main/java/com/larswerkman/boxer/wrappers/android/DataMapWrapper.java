@@ -34,29 +34,19 @@ public class DataMapWrapper extends Boxer {
 
     public DataMapWrapper(Object object) {
         super(object);
-        dataMap = (DataMap) object;
-    }
-
-    private <T extends Boxable> DataMap storeBoxable(T value){
-        DataMap dataMap = new DataMap();
-        try {
-            Class boxer = Class.forName(value.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, value.getClass(), Boxer.class);
-            method.invoke(null, value, new DataMapWrapper(dataMap));
-        } catch (Exception e){}
-        return dataMap;
+        this.dataMap = (DataMap) object;
     }
 
     @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
-        this.dataMap.putDataMap(key, storeBoxable(value));
+        this.dataMap.putDataMap(key, storeBoxable(getClass(), value, new DataMap()));
     }
 
     @Override
     public <T extends Boxable> void addBoxableList(String key, List<T> value) {
         ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
         for(T box : value){
-            dataMaps.add(storeBoxable(box));
+            dataMaps.add(storeBoxable(getClass(), box, new DataMap()));
         }
         this.dataMap.putDataMapArrayList(key, dataMaps);
     }
@@ -65,7 +55,7 @@ public class DataMapWrapper extends Boxer {
     public <T extends Boxable> void addBoxableArray(String key, T[] value) {
         ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
         for(T box : value){
-            dataMaps.add(storeBoxable(box));
+            dataMaps.add(storeBoxable(getClass(), box, new DataMap()));
         }
         this.dataMap.putDataMapArrayList(key, dataMaps);
     }
@@ -277,19 +267,9 @@ public class DataMapWrapper extends Boxer {
         this.dataMap.putFloatArray(key, floats);
     }
 
-    public <T extends Boxable> T retrieveBoxable(DataMap dataMap, Class<T> clazz){
-        T boxable = null;
-        try {
-            Class boxer = Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
-            boxable = (T) method.invoke(null, new DataMapWrapper(dataMap));
-        } catch (Exception e){};
-        return boxable;
-    }
-
     @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        return retrieveBoxable(this.dataMap.getDataMap(key), clazz);
+        return retrieveBoxable(getClass(), clazz, this.dataMap.getDataMap(key));
     }
 
     @Override
@@ -297,7 +277,7 @@ public class DataMapWrapper extends Boxer {
         ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
         T[] boxables = (T[]) Array.newInstance(clazz, dataMaps.size());
         for(int i = 0; i < dataMaps.size(); i++){
-            boxables[i] = retrieveBoxable(dataMaps.get(i), clazz);
+            boxables[i] = retrieveBoxable(getClass(), clazz, dataMaps.get(i));
         }
         return boxables;
     }
@@ -309,7 +289,7 @@ public class DataMapWrapper extends Boxer {
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < dataMaps.size(); i++) {
-                boxables.add(retrieveBoxable(dataMaps.get(i), clazz));
+                boxables.add(retrieveBoxable(getClass(), clazz, dataMaps.get(i)));
             }
         } catch (Exception e){};
         return boxables;
