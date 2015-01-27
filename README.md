@@ -82,13 +82,13 @@ Adding it as a dependency to your project.
 <dependency>
   <groupId>com.larswerkman</groupId>
   <artifactId>boxer</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 </dependency>
 ```
 
 ```groovy
 dependencies {
-    compile 'com.larswerkman:boxer:0.0.1'
+    compile 'com.larswerkman:boxer:0.0.2'
 }
 ```
 License
