@@ -19,7 +19,6 @@ import android.os.Bundle;
 import android.os.Parcel;
 import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
-import com.larswerkman.boxer.internal.BoxerProcessor;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -77,7 +76,7 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public void addEnumList(String key, List<Enum> value) {
+    public void addEnumList(String key, List<? extends Enum> value) {
         String[] strings = new String[value.size()];
         for(int i = 0; i < value.size(); i++){
             strings[i] = value.get(i).name();
@@ -272,9 +271,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public <T extends Boxable> List<T> getBoxableList(String key, Class<T> clazz, Class<? extends List> listtype) {
+    public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
         int size = this.parcel.readInt();
-        List<T> boxables = null;
+        E boxables = null;
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < size; i++) {
@@ -309,9 +308,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public <T extends Enum> List<T> getEnumList(String key, Class<T> clazz, Class<? extends List> listtype) {
+    public <T extends Enum, E extends List<T>> E getEnumList(String key, Class<T> clazz, Class<E> listtype) {
         String[] values = this.parcel.createStringArray();
-        List<T> enums = null;
+        E enums = null;
         try {
             enums = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -332,8 +331,8 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<String> getStringList(String key, Class<? extends List> listtype) {
-        List<String> list = null;
+    public <T extends List<String>> T getStringList(String key, Class<T> listtype) {
+        T list = null;
         try {
             list = listtype.newInstance();
         } catch (Exception e){}
@@ -352,9 +351,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Boolean> getBooleanList(String key, Class<? extends List> listtype) {
+    public <T extends List<Boolean>> T getBooleanList(String key, Class<T> listtype) {
         boolean[] values = this.parcel.createBooleanArray();
-        List<Boolean> booleans = null;
+        T booleans = null;
         try {
             booleans = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -375,9 +374,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Byte> getByteList(String key, Class<? extends List> listtype) {
+    public <T extends List<Byte>> T getByteList(String key, Class<T> listtype) {
         byte[] values = this.parcel.createByteArray();
-        List<Byte> bytes = null;
+        T bytes = null;
         try {
             bytes = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -398,9 +397,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Character> getCharList(String key, Class<? extends List> listtype) {
+    public <T extends List<Character>> T getCharList(String key, Class<T> listtype) {
         char[] values = this.parcel.createCharArray();
-        List<Character> chars = null;
+        T chars = null;
         try {
             chars = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -426,9 +425,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Short> getShortList(String key, Class<? extends List> listtype) {
+    public <T extends List<Short>> T getShortList(String key, Class<T> listtype) {
         int[] values = this.parcel.createIntArray();
-        List<Short> shorts = null;
+        T shorts = null;
         try {
             shorts = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -449,9 +448,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Integer> getIntList(String key, Class<? extends List> listtype) {
+    public <T extends List<Integer>> T getIntList(String key, Class<T> listtype) {
         int[] values = this.parcel.createIntArray();
-        List<Integer> ints = null;
+        T ints = null;
         try {
             ints = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -472,9 +471,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Long> getLongList(String key, Class<? extends List> listtype) {
+    public <T extends List<Long>> T getLongList(String key, Class<T> listtype) {
         long[] values = this.parcel.createLongArray();
-        List<Long> longs = null;
+        T longs = null;
         try {
             longs = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -495,9 +494,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Double> getDoubleList(String key, Class<? extends List> listtype) {
+    public <T extends List<Double>> T getDoubleList(String key, Class<T> listtype) {
         double[] values = this.parcel.createDoubleArray();
-        List<Double> doubles = null;
+        T doubles = null;
         try {
             doubles = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
@@ -518,9 +517,9 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
-    public List<Float> getFloatList(String key, Class<? extends List> listtype) {
+    public <T extends List<Float>> T getFloatList(String key, Class<T> listtype) {
         float[] values = this.parcel.createFloatArray();
-        List<Float> floats = null;
+        T floats = null;
         try {
             floats = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {

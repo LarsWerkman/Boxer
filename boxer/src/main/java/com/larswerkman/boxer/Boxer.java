@@ -21,7 +21,9 @@ import com.larswerkman.boxer.wrappers.android.DataMapWrapper;
 import com.larswerkman.boxer.wrappers.android.ParcelWrapper;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Boxer class used for serialization.
@@ -31,6 +33,8 @@ import java.util.List;
  * </p>
  */
 public abstract class Boxer {
+
+    private static HashMap<Class, Class<? extends Boxer>> wrappers = new HashMap<Class, Class<? extends Boxer>>();
 
     /**
      * Empty constructor, Can't be a generic type because of ClassNotFoundException
@@ -70,7 +74,75 @@ public abstract class Boxer {
                 return new DataMapWrapper(object);
             }
         } catch (ClassNotFoundException e) {/*Do nothing*/}
+        try {
+            Class<? extends Boxer> wrapper = null;
+            if(wrappers.containsKey(object.getClass())){
+                wrapper = wrappers.get(object.getClass());
+            } else {
+                for(Class wrapperClass : wrappers.keySet()){
+                    if(wrapperClass.isAssignableFrom(object.getClass())){
+                        wrapper = wrappers.get(object.getClass());
+                        break;
+                    }
+                }
+            }
+            if(wrapper != null) {
+                return wrapper.getDeclaredConstructor(Object.class).newInstance(object);
+            }
+        } catch (Exception e){/*Do nothing*/}
         return null;
+    }
+
+    /**
+     * Globally register {@link com.larswerkman.boxer.Boxer} implementations
+     * to a specified {@code Class}.
+     *
+     * @param wrapper The class definition of the wrapper to be registered
+     * @param clazz The class definition ot which the wrapper will be bound.
+     */
+    public static void registerWrapper(Class<? extends Boxer> wrapper, Class clazz){
+        if(wrapper == null){
+            throw new IllegalArgumentException("When adding a wrapper, the wrapper can't be null");
+        } else if(clazz == null){
+            throw new IllegalArgumentException("When adding a wrapper, the class can't be null");
+        }
+        wrappers.put(clazz, wrapper);
+    }
+
+    /**
+     * Globally remove a registered wrapper of the same type.
+     *
+     * @param clazz The class definition of the wrapper that needs to be removed.
+     * @return The class definition to which the wrapper was registered,
+     *         will return null if no wrapper is removed
+     */
+    public static Class removeWrapper(Class<? extends Boxer> clazz){
+        if(wrappers.containsValue(clazz)){
+            for(Map.Entry<Class, Class<? extends Boxer>> entry : wrappers.entrySet()){
+                if(entry.getValue() == clazz) {
+                    wrappers.remove(entry.getKey());
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Globally remove a registered wrapper that is registered for a certain type.
+     *
+     * @param clazz The class definition to which the wrapper is bound that needs to be removed
+     * @return The class definition of the wrapper that has been removed;
+     */
+    public static Class<? extends Boxer> removeWrapperForType(Class clazz){
+        return wrappers.remove(clazz);
+    }
+
+    /**
+     * Globally clears all wrappers.
+     */
+    public static void clearWrappers(){
+        wrappers.clear();
     }
 
     /**
@@ -175,7 +247,7 @@ public abstract class Boxer {
      * @param key a String
      * @param value an Enum List object, or null
      */
-    public abstract void addEnumList(String key, List<Enum> value);
+    public abstract void addEnumList(String key, List<? extends Enum> value);
 
     /**
      * Inserts an String value into the mapping of the Boxer,
@@ -429,9 +501,9 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
+     * @param <T> should implement a Boxable interface
      * @param key a String
      * @param clazz type of Boxable expected class
-     * @param <T> should implement a Boxable interface
      * @return a Boxable value, or null
      */
     public abstract <T extends Boxable> T getBoxable(String key, Class<T> clazz);
@@ -457,9 +529,10 @@ public abstract class Boxer {
      * @param clazz type of Boxable expected class
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> should implement a Boxable interface
+     * @param <E> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract <T extends Boxable> List<T> getBoxableList(String key, Class<T> clazz, Class<? extends List> listtype);
+    public abstract <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -494,9 +567,10 @@ public abstract class Boxer {
      * @param clazz type of Enum expected class
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> should extend the Enum class
+     * @param <E> Type of the List that will be instantiated
      * @return an List value, or null
      */
-    public abstract <T extends Enum> List<T> getEnumList(String key, Class<T> clazz, Class<? extends List> listtype);
+    public abstract <T extends Enum, E extends List<T>> E getEnumList(String key, Class<T> clazz, Class<E> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -525,9 +599,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<String> getStringList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<String>> T getStringList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -556,9 +631,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Boolean> getBooleanList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Boolean>> T getBooleanList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -587,9 +663,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Byte> getByteList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Byte>> T getByteList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -618,9 +695,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Character> getCharList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Character>> T getCharList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -649,9 +727,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Short> getShortList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Short>> T getShortList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -680,9 +759,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Integer> getIntList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Integer>> T getIntList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -711,9 +791,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Long> getLongList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Long>> T getLongList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -742,9 +823,10 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Double> getDoubleList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Double>> T getDoubleList(String key, Class<T> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -773,7 +855,8 @@ public abstract class Boxer {
      *
      * @param key a String
      * @param listtype type of expected List, should have a no-args constructor.
+     * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
      */
-    public abstract List<Float> getFloatList(String key, Class<? extends List> listtype);
+    public abstract <T extends List<Float>> T getFloatList(String key, Class<T> listtype);
 }
