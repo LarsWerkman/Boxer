@@ -45,6 +45,7 @@ public class BoxerProcessor extends AbstractProcessor {
     private static TypeMirror TYPE_BOXABLE;
     private static TypeMirror TYPE_STRING;
     private static TypeMirror TYPE_LIST;
+    private static TypeMirror TYPE_OBJECT;
 
     private Elements elementUtils;
     private Types typeUtils;
@@ -60,11 +61,12 @@ public class BoxerProcessor extends AbstractProcessor {
         elementUtils = processingEnv.getElementUtils();
         typeUtils = processingEnv.getTypeUtils();
 
+        TYPE_OBJECT = elementUtils.getTypeElement("java.lang.Object").asType();
         TYPE_BOXABLE = elementUtils.getTypeElement("com.larswerkman.boxer.Boxable").asType();
         TYPE_STRING = elementUtils.getTypeElement("java.lang.String").asType();
         TYPE_LIST = typeUtils.getDeclaredType(
                 elementUtils.getTypeElement("java.util.List"),
-                typeUtils.getWildcardType(TYPE_BOXABLE, null));
+                typeUtils.getWildcardType(TYPE_OBJECT, null));
 
         Set<? extends Element> elements = env.getElementsAnnotatedWith(Box.class);
         for (Element element : elements) {
@@ -105,9 +107,9 @@ public class BoxerProcessor extends AbstractProcessor {
                     //Find out of the child element is accessible
                     Modifier modifier = null;
                     for (Modifier mod : child.getModifiers()) {
-                        if (mod == Modifier.PUBLIC) {
+                        if (mod == Modifier.PUBLIC || mod == Modifier.PROTECTED) {
                             modifier = mod;
-                        } else if (mod == Modifier.PRIVATE || mod == Modifier.PROTECTED) {
+                        } else if (mod == Modifier.PRIVATE) {
                             boolean getter = false;
                             boolean setter = false;
                             List<ExecutableElement> methods = ElementFilter.methodsIn(typeElement.getEnclosedElements());
@@ -166,7 +168,7 @@ public class BoxerProcessor extends AbstractProcessor {
                     } else if (isArray(type)) {
                         TypeMirror arrayType = getTypeOfArray(type);
                         if (arrayType != null) {
-                            if (isAcceptable(arrayType)) {
+                            if (isAcceptable(arrayType) || isEnum(arrayType)) {
                                 fields.add(new PackedField(name, type, modifier, true, wrapType));
                             } else {
                                 log.printMessage(Diagnostic.Kind.ERROR,
@@ -187,7 +189,7 @@ public class BoxerProcessor extends AbstractProcessor {
                         }
                     } else {
                         log.printMessage(Diagnostic.Kind.ERROR,
-                                String.format("%s field can't be resolved only fields wit the type of: " +
+                                String.format("%s field can't be resolved only fields with the type of: " +
                                                 "primitives and wrappers, Enum classes and objects implementing " +
                                                 "the boxable interface with @Box annotation",
                                         child.getSimpleName())
@@ -196,9 +198,7 @@ public class BoxerProcessor extends AbstractProcessor {
                     }
                 }
 
-                if (fields.size() > 0) {
-                    brewJava(typeElement, fields);
-                }
+                brewJava(typeElement, fields);
             } else {
                 log.printMessage(Diagnostic.Kind.ERROR,
                         String.format("%s @Box annotated class should always implement the Boxable interface",
@@ -244,13 +244,15 @@ public class BoxerProcessor extends AbstractProcessor {
 
                     //Check if type if is [] or List and use appropriete signature
                     String signature = field.type().getKind() == TypeKind.ARRAY ? "Array" : "List";
-                    if (isPrimitiveOrWrapper(field.type())) {
+                    TypeMirror arrayType = getTypeOfArray(field.type());
+
+                    if (isPrimitiveOrWrapper(arrayType)) {
                         writer.emitStatement("boxer.add%s%s(\"%s\", boxable.%s)",
-                                unboxedName(field.type()), signature, field.name(), field.getter()
+                                unboxedName(arrayType), signature, field.name(), field.getter()
                         );
-                    } else if (isString(field.type())) {
+                    } else if (isString(arrayType)) {
                         writer.emitStatement("boxer.addString%s(\"%s\", boxable.%s)", signature, field.name(), field.getter());
-                    } else if (isEnum(field.type())) {
+                    } else if (isEnum(arrayType)) {
                         writer.emitStatement("boxer.addEnum%s(\"%s\", boxable.%s)", signature, field.name(), field.getter());
                     } else {
                         writer.emitStatement("boxer.addBoxable%s(\"%s\", boxable.%s)", signature, field.name(), field.getter());
@@ -316,7 +318,7 @@ public class BoxerProcessor extends AbstractProcessor {
                         } else {
 
                             //Check if the list is of type list or of types like: ArrayList, Stack etc.
-                            String listtype = field.type().toString();
+                            String listtype = ((DeclaredType) field.type()).asElement().toString();
                             TypeMirror declaredListType = typeUtils.getDeclaredType(
                                     elementUtils.getTypeElement("java.util.List"), arrayType
                             );
@@ -332,7 +334,7 @@ public class BoxerProcessor extends AbstractProcessor {
                             if (isPrimitiveOrWrapper(arrayType)) {
                                 writer.emitStatement("boxable.%s", field.setter(
                                                 String.format("boxer.get%sList(\"%s\", %s.class)",
-                                                        unboxedName(field.type()), field.name(), listtype))
+                                                        unboxedName(arrayType), field.name(), listtype))
                                 );
                             } else if (isString(arrayType)) {
                                 writer.emitStatement("boxable.%s", field.setter(
