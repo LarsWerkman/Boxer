@@ -356,18 +356,25 @@ public abstract class AbstractWrapperTest {
 
         ListBoxable listBoxable = boxer.getBoxable(KEY, ListBoxable.class);
         Assertions.assertThat(listBoxable.defaultList)
+                .isOfAnyClassIn(ArrayList.class)
                 .isEqualTo(LIST_BOXABLE.defaultList);
         Assertions.assertThat(listBoxable.arrayList)
+                .isOfAnyClassIn(ArrayList.class)
                 .isEqualTo(LIST_BOXABLE.arrayList);
         Assertions.assertThat(listBoxable.arrayWrapList)
+                .isOfAnyClassIn(ArrayList.class)
                 .isEqualTo(LIST_BOXABLE.arrayWrapList);
         Assertions.assertThat(listBoxable.stackList)
+                .isOfAnyClassIn(Stack.class)
                 .isEqualTo(LIST_BOXABLE.stackList);
         Assertions.assertThat(listBoxable.stackWrapList)
+                .isOfAnyClassIn(Stack.class)
                 .isEqualTo(LIST_BOXABLE.stackWrapList);
         Assertions.assertThat(listBoxable.linkedList)
+                .isOfAnyClassIn(LinkedList.class)
                 .isEqualTo(LIST_BOXABLE.linkedList);
         Assertions.assertThat(listBoxable.linkedWrapList)
+                .isOfAnyClassIn(LinkedList.class)
                 .isEqualTo(LIST_BOXABLE.linkedWrapList);
     }
 
