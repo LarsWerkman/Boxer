@@ -9,15 +9,15 @@ import com.larswerkman.boxer.annotations.Box;
 @Box
 public class PrimaryBoxable implements Boxable {
 
-    public String aString = "string";
-    public boolean aBoolean = true;
-    public byte aByte = 0xA;
-    public char aChar = 'A';
-    public short aShort = 99;
-    public int anInt = 99;
-    public long aLong = 99l;
-    public double aDouble = 0.99;
-    public float aFloat = 0.99f;
+    public String aString;
+    public boolean aBoolean;
+    public byte aByte;
+    public char aChar;
+    public short aShort;
+    public int anInt;
+    public long aLong;
+    public double aDouble;
+    public float aFloat;
 
     public PrimaryBoxable setup(){
         aString = "string";

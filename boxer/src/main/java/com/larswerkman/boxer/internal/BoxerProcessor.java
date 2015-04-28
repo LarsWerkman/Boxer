@@ -29,8 +29,12 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import java.awt.*;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.List;
 
 /**
  * Annotation Processor for processing the {@link com.larswerkman.boxer.annotations.Box} annotation
@@ -91,7 +95,7 @@ public class BoxerProcessor extends AbstractProcessor {
                 }
 
                 List<PackedField> fields = new ArrayList<PackedField>();
-                List<? extends Element> enclosedElements = typeElement.getEnclosedElements();
+                List<? extends Element> enclosedElements = getAllElements(typeElement);
                 for (Element child : enclosedElements) {
 
                     //Check if its a field and if the field contains a transient modifier,
@@ -112,7 +116,7 @@ public class BoxerProcessor extends AbstractProcessor {
                         } else if (mod == Modifier.PRIVATE) {
                             boolean getter = false;
                             boolean setter = false;
-                            List<ExecutableElement> methods = ElementFilter.methodsIn(typeElement.getEnclosedElements());
+                            List<ExecutableElement> methods = ElementFilter.methodsIn(enclosedElements);
                             for (ExecutableElement method : methods) {
                                 if (method.getSimpleName().contentEquals(String.format("get%s", capitalize(name)))
                                         && method.getParameters().size() == 0
@@ -220,7 +224,7 @@ public class BoxerProcessor extends AbstractProcessor {
             JavaFileObject jfo = filer.createSourceFile(qualified, classElement);
             JavaWriter writer = new JavaWriter(jfo.openWriter());
             writer.emitPackage(getPackage(classElement))
-                    .emitImports(Boxer.class.getName(), List.class.getName(), ArrayList.class.getName())
+                    .emitImports(Boxer.class.getName(), List.class.getName())
                     .beginType(simple, "class", EnumSet.of(Modifier.PUBLIC, Modifier.FINAL))
                     .beginMethod("void", METHOD_WRITE, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), original, "boxable", "Boxer", "boxer");
             for (PackedField field : fields) {
@@ -326,7 +330,7 @@ public class BoxerProcessor extends AbstractProcessor {
                                 if (field.wrapper() != null) {
                                     listtype = field.wrapper().toString();
                                 } else {
-                                    listtype = "ArrayList";
+                                    listtype = "java.util.ArrayList";
                                 }
                             }
 
@@ -418,6 +422,18 @@ public class BoxerProcessor extends AbstractProcessor {
         } else {
             return "";
         }
+    }
+
+    private List<? extends Element> getAllElements(TypeElement element){
+        List<Element> fieldElements = new ArrayList<Element>(element.getEnclosedElements());
+
+        TypeMirror superType = element.getSuperclass();
+        while(!(superType instanceof NoType)){
+            TypeElement typeElement = elementUtils.getTypeElement(superType.toString());
+            fieldElements.addAll(typeElement.getEnclosedElements());
+            superType = typeElement.getSuperclass();
+        }
+        return fieldElements;
     }
 
     private String capitalize(String string) {

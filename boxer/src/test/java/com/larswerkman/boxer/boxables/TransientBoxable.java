@@ -24,7 +24,8 @@ public class TransientBoxable implements Boxable {
         return !(obj == null
                 || !(obj instanceof TransientBoxable))
                 && ((obj == this)
-                || (string.equals(((TransientBoxable) obj).string)
+                || (string != null
+                && string.equals(((TransientBoxable) obj).string)
                 && integer == ((TransientBoxable) obj).integer));
     }
 }

@@ -27,7 +27,12 @@ public class ListBoxable implements Boxable {
     public List<Integer> linkedWrapList;
 
     public ListBoxable setup(){
-        defaultList = Arrays.asList(1, 2, 3, 4, 5);
+        defaultList = new ArrayList<Integer>();
+        defaultList.add(1);
+        defaultList.add(2);
+        defaultList.add(3);
+        defaultList.add(4);
+        defaultList.add(5);
 
         arrayList = new ArrayList<Integer>();
         arrayList.addAll(defaultList);

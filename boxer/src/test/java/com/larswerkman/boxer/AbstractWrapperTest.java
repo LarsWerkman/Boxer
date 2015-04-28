@@ -1,9 +1,7 @@
 package com.larswerkman.boxer;
 
 import com.google.common.primitives.*;
-import com.larswerkman.boxer.boxables.PrimaryBoxable;
-import com.larswerkman.boxer.boxables.ListBoxable;
-import com.larswerkman.boxer.boxables.TransientBoxable;
+import com.larswerkman.boxer.boxables.*;
 import com.larswerkman.boxer.enums.PrimaryEnum;
 import org.assertj.core.api.Assertions;
 import org.junit.*;
@@ -59,6 +57,8 @@ public abstract class AbstractWrapperTest {
 
     private static final ListBoxable LIST_BOXABLE = new ListBoxable().setup();
     private static final TransientBoxable TRANSIENT_BOXABLE = new TransientBoxable().setup();
+    private static final InheritancePrimaryBoxable INHERITANCE_PRIMARY_BOXABLE = new InheritancePrimaryBoxable().setup();
+    private static final InheritanceAccessBoxable INHERITANCE_ACCESS_BOXABLE = new InheritanceAccessBoxable().setup();
 
     public abstract Boxer getBoxer();
 
@@ -382,7 +382,23 @@ public abstract class AbstractWrapperTest {
     public void transientBoxable(){
         boxer.addBoxable(KEY, TRANSIENT_BOXABLE);
         between();
-        TransientBoxable boxable = boxer.getBoxable(KEY, TransientBoxable.class);Assertions.assertThat(new Object())
+        Assertions.assertThat(boxer.getBoxable(KEY, TransientBoxable.class))
                 .isNotEqualTo(TRANSIENT_BOXABLE);
+    }
+
+    @Test
+    public void inheritencePrimaryBoxable(){
+        boxer.addBoxable(KEY, INHERITANCE_PRIMARY_BOXABLE);
+        between();
+        Assertions.assertThat(boxer.getBoxable(KEY, InheritancePrimaryBoxable.class))
+                .isEqualTo(INHERITANCE_PRIMARY_BOXABLE);
+    }
+
+    @Test
+    public void inheritenceAccessBoxable(){
+        boxer.addBoxable(KEY, INHERITANCE_ACCESS_BOXABLE);
+        between();
+        Assertions.assertThat(boxer.getBoxable(KEY, InheritanceAccessBoxable.class))
+                .isEqualTo(INHERITANCE_ACCESS_BOXABLE);
     }
 }
