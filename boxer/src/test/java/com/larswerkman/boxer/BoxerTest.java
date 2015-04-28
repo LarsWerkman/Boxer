@@ -24,9 +24,6 @@ import java.util.HashMap;
 @Config(manifest = Config.NONE)
 public class BoxerTest {
 
-    public static final String KEY = "key";
-    public static final AccessBoxable ACCESS_BOXABLE = new AccessBoxable().setup();
-
     @Before
     public void setup(){
         Boxer.registerWrapper(TestWrapper.class, HashMap.class);
@@ -69,13 +66,5 @@ public class BoxerTest {
         Boxer.clearWrappers();
         Assertions.assertThat(Boxer.from(new HashMap<String, Object>()))
                 .isNull();
-    }
-
-    @Test
-    public void AccessModifiers(){
-        Boxer boxer = Boxer.from(new HashMap<String, Object>());
-        boxer.addBoxable(KEY, ACCESS_BOXABLE);
-        Assertions.assertThat(boxer.getBoxable(KEY, AccessBoxable.class))
-                .isEqualTo(ACCESS_BOXABLE);
     }
 }

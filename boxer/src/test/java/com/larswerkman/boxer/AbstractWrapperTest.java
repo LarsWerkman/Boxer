@@ -57,6 +57,7 @@ public abstract class AbstractWrapperTest {
 
     private static final ListBoxable LIST_BOXABLE = new ListBoxable().setup();
     private static final TransientBoxable TRANSIENT_BOXABLE = new TransientBoxable().setup();
+    private static final AccessBoxable ACCESS_BOXABLE = new AccessBoxable().setup();
     private static final InheritancePrimaryBoxable INHERITANCE_PRIMARY_BOXABLE = new InheritancePrimaryBoxable().setup();
     private static final InheritanceAccessBoxable INHERITANCE_ACCESS_BOXABLE = new InheritanceAccessBoxable().setup();
     private static final InheritanceMultipleBoxable INHERITANCE_MULTIPLE_BOXABLE = new InheritanceMultipleBoxable().setup();
@@ -385,6 +386,14 @@ public abstract class AbstractWrapperTest {
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, TransientBoxable.class))
                 .isNotEqualTo(TRANSIENT_BOXABLE);
+    }
+
+    @Test
+    public void AccessModifiers(){
+        boxer.addBoxable(KEY, ACCESS_BOXABLE);
+        between();
+        Assertions.assertThat(boxer.getBoxable(KEY, AccessBoxable.class))
+                .isEqualTo(ACCESS_BOXABLE);
     }
 
     @Test
