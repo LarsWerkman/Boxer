@@ -563,14 +563,14 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
+     * @param <T> should extend the Enum class
+     * @param <E> Type of the List that will be instantiated
      * @param key a String
      * @param clazz type of Enum expected class
      * @param listtype type of expected List, should have a no-args constructor.
-     * @param <T> should extend the Enum class
-     * @param <E> Type of the List that will be instantiated
      * @return an List value, or null
      */
-    public abstract <T extends Enum, E extends List<T>> E getEnumList(String key, Class<T> clazz, Class<E> listtype);
+    public abstract <T extends Enum, E extends List<T>> List<T> getEnumList(String key, Class<T> clazz, Class<E> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
