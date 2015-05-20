@@ -20,10 +20,10 @@ import com.larswerkman.boxer.wrappers.android.BundleWrapper;
 import com.larswerkman.boxer.wrappers.android.DataMapWrapper;
 import com.larswerkman.boxer.wrappers.android.ParcelWrapper;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 /**
  * Boxer class used for serialization.
@@ -94,6 +94,33 @@ public abstract class Boxer {
     }
 
     /**
+     * Returns the fields of a specific class which will be serialized.
+     *
+     * @param clazz The boxbale class you want to inspect
+     * @return An {@link java.util.List} of fields, will return an empty
+     *         {@link java.util.List} when there are no fields to be serialized
+     */
+    public static List<Field> getBoxableFields(Class<? extends Boxable> clazz){
+        List<Field> fields = new ArrayList<Field>();
+        for(Field field : clazz.getDeclaredFields()){
+            if(!Modifier.isTransient(field.getModifiers())){
+                fields.add(field);
+            }
+        }
+
+        Class superClass = clazz.getSuperclass();
+        while(superClass != null){
+            for(Field field : superClass.getDeclaredFields()){
+                if(!fields.contains(field) && !Modifier.isTransient(field.getModifiers())){
+                    fields.add(field);
+                }
+            }
+            superClass = superClass.getSuperclass();
+        }
+        return fields;
+    }
+
+    /**
      * Globally register {@link com.larswerkman.boxer.Boxer} implementations
      * to a specified {@code Class}.
      *
@@ -154,16 +181,32 @@ public abstract class Boxer {
      * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
      * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
      * @param <T> Generic serialization object
-     * @return A the filled instance of the T object that is given
+     * @return A the filled instance of the {@link T} object that is given
      */
     protected <A extends Boxer, B extends Boxable, T> T storeBoxable(Class<A> sub, B boxable, T object){
         try {
-            Class boxer = Class.forName(boxable.getClass().getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
+            Class boxer = boxableClass(boxable.getClass());
             Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, boxable.getClass(), Boxer.class);
             A wrapper = sub.getDeclaredConstructor(Object.class).newInstance(object);
             method.invoke(null, boxable, wrapper);
         } catch (Exception e){}
         return object;
+    }
+
+    /**
+     * Stores a filled {@link com.larswerkman.boxer.Boxable} object.
+     *
+     * @param wrapper subclass of the abstract {@link com.larswerkman.boxer.Boxer} class
+     * @param boxable object to be stored
+     * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
+     * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
+     */
+    protected <A extends Boxer, B extends Boxable> void storeBoxable(A wrapper, B boxable){
+        try {
+            Class boxer = boxableClass(boxable.getClass());
+            Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, boxable.getClass(), Boxer.class);
+            method.invoke(null, boxable, wrapper);
+        } catch (Exception e){}
     }
 
     /**
@@ -175,17 +218,40 @@ public abstract class Boxer {
      * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
      * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
      * @param <T> Generic serialization object
-     * @return A restored {@link com.larswerkman.boxer.Boxable} object of type A
+     * @return A restored {@link com.larswerkman.boxer.Boxable} object of type {@link A}
      */
     protected <A extends Boxer, B extends Boxable, T> B retrieveBoxable(Class<A> sub, Class<B> boxable, T object){
         B value = null;
         try {
-            Class boxer = Class.forName(boxable.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
+            Class boxer = boxableClass(boxable);
             Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
             A wrapper = sub.getDeclaredConstructor(Object.class).newInstance(object);
             value = (B) method.invoke(null, wrapper);
         } catch (Exception e){};
         return value;
+    }
+
+    /**
+     * Retrieves a filled {@link com.larswerkman.boxer.Boxable} object.
+     *
+     * @param wrapper Subclass of the abstract {@link com.larswerkman.boxer.Boxer} class
+     * @param boxable Type of stored boxable
+     * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
+     * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
+     * @return A restored {@link com.larswerkman.boxer.Boxable} object of the type {@link A}
+     */
+    protected  <A extends Boxer, B extends Boxable> B retrieveBoxable(A wrapper, Class<B> boxable){
+        B value = null;
+        try{
+            Class boxer = boxableClass(boxable);
+            Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
+            value = (B) method.invoke(null, wrapper);
+        } catch (Exception e){}
+        return value;
+    }
+
+    private static <T extends Boxable> Class<?> boxableClass(Class<T> tClass) throws ClassNotFoundException {
+        return Class.forName(tClass.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
     }
 
     /*
