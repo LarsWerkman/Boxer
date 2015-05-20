@@ -56,6 +56,22 @@ public class ExampleActivity extends Activity {
 }
 ```
 
+To register your own Boxer wrapper for a specific class:
+
+```java
+//Registering a wrapper class for a specific Target class
+Boxer.registerWrapper(Wrapper.class, Target.class);
+
+//Removing a wrapper for a specific wrapper class
+Boxer.removeWrapper(Wrapper.class);
+
+//Removing a wrapper for a target class
+Boxer.removeWrapperForType(Target.class);
+
+//Clearing all the wrappers
+Boxer.clearWrappers();
+```
+
 Current supported supported classes:
 
 * (Android) Bundle
@@ -82,13 +98,13 @@ Adding it as a dependency to your project.
 <dependency>
   <groupId>com.larswerkman</groupId>
   <artifactId>boxer</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.3</version>
 </dependency>
 ```
 
 ```groovy
 dependencies {
-    compile 'com.larswerkman:boxer:0.0.1'
+    compile 'com.larswerkman:boxer:0.0.3'
 }
 ```
 License
