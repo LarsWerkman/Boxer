@@ -19,6 +19,7 @@ import com.larswerkman.boxer.internal.BoxerProcessor;
 import com.larswerkman.boxer.wrappers.android.BundleWrapper;
 import com.larswerkman.boxer.wrappers.android.DataMapWrapper;
 import com.larswerkman.boxer.wrappers.android.ParcelWrapper;
+import com.larswerkman.boxer.wrappers.android.SQLiteWrapper;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -74,6 +75,12 @@ public abstract class Boxer {
                 return new DataMapWrapper(object);
             }
         } catch (ClassNotFoundException e) {/*Do nothing*/}
+        try {
+            if (Class.forName("android.database.sqlite.SQLiteDatabase")
+                    .isAssignableFrom(object.getClass())){
+                return new SQLiteWrapper(object);
+            }
+        } catch (ClassNotFoundException e){/*Do nothing*/}
         try {
             Class<? extends Boxer> wrapper = null;
             if(wrappers.containsKey(object.getClass())){

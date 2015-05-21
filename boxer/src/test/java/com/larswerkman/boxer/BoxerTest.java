@@ -3,19 +3,17 @@ package com.larswerkman.boxer;
 import android.os.Bundle;
 import android.os.Parcel;
 import com.google.android.gms.wearable.DataMap;
-import com.larswerkman.boxer.boxables.AccessBoxable;
 import com.larswerkman.boxer.boxables.InheritancePrimaryBoxable;
 import com.larswerkman.boxer.boxables.PrimaryBoxable;
 import com.larswerkman.boxer.boxables.TransientBoxable;
 import com.larswerkman.boxer.wrappers.TestWrapper;
-import com.larswerkman.boxer.wrappers.android.BundleWrapper;
-import com.larswerkman.boxer.wrappers.android.DataMapWrapper;
-import com.larswerkman.boxer.wrappers.android.ParcelWrapper;
+import com.larswerkman.boxer.wrappers.android.*;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.util.HashMap;
@@ -26,6 +24,8 @@ import java.util.HashMap;
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
 public class BoxerTest {
+
+    private SQLiteWrapperTest.SQLiteHelper sqLiteHelper = new SQLiteWrapperTest.SQLiteHelper(RuntimeEnvironment.application);
 
     @Before
     public void setup(){
@@ -40,6 +40,8 @@ public class BoxerTest {
                 .isOfAnyClassIn(DataMapWrapper.class).isNotNull();
         Assertions.assertThat(Boxer.from(Parcel.obtain()))
                 .isOfAnyClassIn(ParcelWrapper.class).isNotNull();
+        Assertions.assertThat(Boxer.from(sqLiteHelper.getReadableDatabase()))
+                .isOfAnyClassIn(SQLiteWrapper.class).isNotNull();
     }
 
     @Test
