@@ -9,7 +9,7 @@ import com.larswerkman.boxer.annotations.Box;
 @Box
 public class PrimaryBoxable implements Boxable {
 
-    public String aString;
+    public String aString = "";
     public boolean aBoolean;
     public byte aByte;
     public char aChar;

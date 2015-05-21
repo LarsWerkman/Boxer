@@ -437,4 +437,34 @@ public abstract class AbstractWrapperTest {
         Assertions.assertThat(boxer.getBoxable(KEY, EnumBoxable.class))
                 .isEqualTo(ENUM_BOXABLE);
     }
+
+    @Test
+    public void replaceBoxable(){
+        boxer.addBoxable(KEY, BOXABLE);
+        between();
+        boxer.addBoxable(KEY, new PrimaryBoxable());
+        between();
+        Assertions.assertThat(boxer.getBoxable(KEY, PrimaryBoxable.class))
+                .isEqualTo(new PrimaryBoxable());
+    }
+
+    @Test
+    public void replaceList(){
+        boxer.addIntList(KEY, Arrays.asList(1, 2, 3, 4 , 5));
+        between();
+        boxer.addIntList(KEY, Ints.asList(INTEGER_ARRAY));
+        between();
+        Assertions.assertThat(boxer.getIntList(KEY, ArrayList.class))
+                .isEqualTo(Ints.asList(INTEGER_ARRAY));
+    }
+
+    @Test
+    public void replaceArray() {
+        boxer.addIntArray(KEY, new int[]{1, 2, 3, 4, 5});
+        between();
+        boxer.addIntArray(KEY, INTEGER_ARRAY);
+        between();
+        Assertions.assertThat(boxer.getIntArray(KEY))
+                .isEqualTo(INTEGER_ARRAY);
+    }
 }
