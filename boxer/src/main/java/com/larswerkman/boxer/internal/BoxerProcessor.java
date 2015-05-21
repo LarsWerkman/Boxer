@@ -399,7 +399,8 @@ public class BoxerProcessor extends AbstractProcessor {
     }
 
     public boolean isEnum(TypeMirror type) {
-        return typeUtils.asElement(type)
+        Element element = typeUtils.asElement(type);
+        return element != null && element
                 .getKind() == ElementKind.ENUM;
     }
 
