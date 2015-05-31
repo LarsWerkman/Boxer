@@ -15,10 +15,10 @@
  */
 package com.larswerkman.boxer.internal;
 
-import com.larswerkman.boxer.Boxer;
 import com.larswerkman.boxer.annotations.Box;
 import com.larswerkman.boxer.annotations.Wrap;
-import com.squareup.javawriter.JavaWriter;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.JavaFile;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -28,11 +28,7 @@ import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
-import java.awt.*;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
 
@@ -42,9 +38,12 @@ import java.util.List;
 @SupportedAnnotationTypes("com.larswerkman.boxer.annotations.Box")
 public class BoxerProcessor extends AbstractProcessor {
 
+    public static final String ADAPTER_PACKAGE_NAME = "com.larswerkman.boxer";
+    public static final String ADAPTER_CLASS_NAME = "Adapters$Box";
+
     public static final String CLASS_EXTENSION = "$Boxer";
-    public static final String METHOD_READ = "read";
-    public static final String METHOD_WRITE = "write";
+    public static final String METHOD_SERIALIZE = "serialize";
+    public static final String METHOD_DESERIALIZE = "deserialize";
 
     private static TypeMirror TYPE_BOXABLE;
     private static TypeMirror TYPE_STRING;
@@ -72,310 +71,167 @@ public class BoxerProcessor extends AbstractProcessor {
                 elementUtils.getTypeElement("java.util.List"),
                 typeUtils.getWildcardType(TYPE_OBJECT, null));
 
-        Set<? extends Element> elements = env.getElementsAnnotatedWith(Box.class);
-        for (Element element : elements) {
+        Set<? extends Element> boxableElements = env.getElementsAnnotatedWith(Box.class);
+
+        //Process all boxable classes
+        for (Element element : boxableElements) {
             TypeElement typeElement = (TypeElement) element;
-            //Check if implements a Boxable interface
-            if (typeUtils.isAssignable(typeElement.asType(), TYPE_BOXABLE)) {
 
-                //Check if the class has a usable public/no-args constructor
-                boolean usableConstructor = false;
-                List<ExecutableElement> constructors = ElementFilter.constructorsIn(typeElement.getEnclosedElements());
-                for (ExecutableElement constructor : constructors) {
-                    if (constructor.getParameters().size() == 0) {
-                        usableConstructor = true;
-                        break;
-                    }
-                }
-                if (!usableConstructor) {
-                    log.printMessage(Diagnostic.Kind.ERROR,
-                            String.format("%s class should have a public constructor with no-args", typeElement.getSimpleName())
-                    );
-                    return true;
-                }
+            List<FieldBinding> bindings = parseBoxableFields(typeElement);
+            BoxClass boxClass = new BoxClass(element.getSimpleName().toString() + CLASS_EXTENSION,
+                    ClassName.get(typeElement), bindings);
 
-                List<PackedField> fields = new ArrayList<PackedField>();
-                List<? extends Element> enclosedElements = getAllElements(typeElement);
-                for (Element child : enclosedElements) {
-
-                    //Check if its a field and if the field contains a transient modifier,
-                    //in which case we should ignore this field.
-                    if(!child.getKind().isField()
-                            || child.getModifiers().contains(Modifier.TRANSIENT)){
-                        continue;
-                    }
-
-                    //Retrieve name of field
-                    String name = child.getSimpleName().toString();
-
-                    //Find out of the child element is accessible
-                    Modifier modifier = null;
-                    for (Modifier mod : child.getModifiers()) {
-                        if (mod == Modifier.PUBLIC || mod == Modifier.PROTECTED) {
-                            modifier = mod;
-                        } else if (mod == Modifier.PRIVATE) {
-                            boolean getter = false;
-                            boolean setter = false;
-                            List<ExecutableElement> methods = ElementFilter.methodsIn(enclosedElements);
-                            for (ExecutableElement method : methods) {
-                                if (method.getSimpleName().contentEquals(String.format("get%s", capitalize(name)))
-                                        && method.getParameters().size() == 0
-                                        && typeUtils.isAssignable(method.getReturnType(), child.asType())) {
-                                    getter = true;
-                                    continue;
-                                }
-
-                                if (method.getSimpleName().contentEquals(String.format("set%s", capitalize(name)))
-                                        && method.getParameters().size() == 1
-                                        && typeUtils.isAssignable(method.getParameters().get(0).asType(), child.asType())) {
-                                    setter = true;
-                                }
-                            }
-                            if (!getter || !setter) {
-                                log.printMessage(Diagnostic.Kind.ERROR,
-                                        String.format("%s field should have default getter and setter methods or should be public",
-                                                child.getSimpleName()));
-                                return true;
-                            }
-                            modifier = mod;
-                        } else if (mod == Modifier.FINAL) {
-                            log.printMessage(Diagnostic.Kind.ERROR,
-                                    String.format("%s fied cannot be final",
-                                            child.getSimpleName())
-                            );
-                            return true;
-                        }
-                    }
-
-                    //Check if field contains a @Wrap annotation
-                    Wrap wrap = child.getAnnotation(Wrap.class);
-                    TypeMirror wrapType = null;
-                    if (wrap != null) {
-                        try {
-                            wrap.value();
-                        } catch (MirroredTypeException e) {
-                            wrapType = e.getTypeMirror();
-                            if (!typeUtils.isAssignable(wrapType, child.asType())) {
-                                log.printMessage(Diagnostic.Kind.ERROR,
-                                        String.format("%s @Wrap annotated value %s is not assignable from %s",
-                                                child.getSimpleName(), wrapType.toString(), child.asType().toString())
-                                );
-                                return true;
-                            }
-                        }
-                    }
-
-                    //Check if the field type is acceptable
-                    TypeMirror type = child.asType();
-                    if (isAcceptable(type) || isEnum(type)) {
-                        fields.add(new PackedField(name, type, modifier, false, wrapType));
-                    } else if (isArray(type)) {
-                        TypeMirror arrayType = getTypeOfArray(type);
-                        if (arrayType != null) {
-                            if (isAcceptable(arrayType) || isEnum(arrayType)) {
-                                fields.add(new PackedField(name, type, modifier, true, wrapType));
-                            } else {
-                                log.printMessage(Diagnostic.Kind.ERROR,
-                                        String.format("%s field can't be resolved, only arrays with type of" +
-                                                        ": primitives and wrappers, Enum classes and objects " +
-                                                        "implementing the boxable interface with the @Box annotation." +
-                                                        " add transient modifier to ignore field.",
-                                                child.getSimpleName())
-                                );
-                                log.printMessage(Diagnostic.Kind.ERROR, arrayType.toString());
-                            }
-                        } else {
-                            log.printMessage(Diagnostic.Kind.ERROR,
-                                    String.format("%s array should have an specified type",
-                                            child.getSimpleName())
-                            );
-                            return true;
-                        }
-                    } else {
-                        log.printMessage(Diagnostic.Kind.ERROR,
-                                String.format("%s field can't be resolved only fields with the type of: " +
-                                                "primitives and wrappers, Enum classes and objects implementing " +
-                                                "the boxable interface with @Box annotation",
-                                        child.getSimpleName())
-                        );
-                        return true;
-                    }
-                }
-
-                brewJava(typeElement, fields);
-            } else {
-                log.printMessage(Diagnostic.Kind.ERROR,
-                        String.format("%s @Box annotated class should always implement the Boxable interface",
-                                element.getSimpleName())
-                );
-                return true;
+            JavaFile file = JavaFile.builder(getPackage(typeElement), boxClass.build()).build();
+            try {
+                file.writeTo(filer);
+            } catch (IOException e) {
+                log.printMessage(Diagnostic.Kind.ERROR, e.getMessage(), element);
             }
         }
+
         return true;
     }
 
-    private void brewJava(TypeElement classElement, List<PackedField> fields) {
-        try {
-            String original = classElement.getSimpleName().toString();
-            String originalQualified = classElement.getQualifiedName().toString();
-            String simple = original + CLASS_EXTENSION;
-            String qualified = originalQualified + CLASS_EXTENSION;
+    private List<FieldBinding> parseBoxableFields(TypeElement typeElement){
+        List<FieldBinding> bindings = new ArrayList<FieldBinding>();
+        for(Element field : getAllElements(typeElement)){
 
-            JavaFileObject jfo = filer.createSourceFile(qualified, classElement);
-            JavaWriter writer = new JavaWriter(jfo.openWriter());
-            writer.emitPackage(getPackage(classElement))
-                    .emitImports(Boxer.class.getName(), List.class.getName())
-                    .beginType(simple, "class", EnumSet.of(Modifier.PUBLIC, Modifier.FINAL))
-                    .beginMethod("void", METHOD_WRITE, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), original, "boxable", "Boxer", "boxer");
-            for (PackedField field : fields) {
-
-                //Check if its an array
-                if (!field.isArray()) {
-
-                    //Check what type the field is
-                    if (isPrimitiveOrWrapper(field.type())) {
-                        writer.emitStatement("boxer.add%s(\"%s\", boxable.%s)",
-                                unboxedName(field.type()), field.name(), field.getter()
-                        );
-                    } else if (isString(field.type())) {
-                        writer.emitStatement("boxer.addString(\"%s\", boxable.%s)", field.name(), field.getter());
-                    } else if (isEnum(field.type())) {
-                        writer.emitStatement("boxer.addEnum(\"%s\", boxable.%s)", field.name(), field.getter());
-                    } else {
-                        writer.emitStatement("boxer.addBoxable(\"%s\", boxable.%s)", field.name(), field.getter());
-                    }
-                } else {
-
-                    //Check if type if is [] or List and use appropriete signature
-                    String signature = field.type().getKind() == TypeKind.ARRAY ? "Array" : "List";
-                    TypeMirror arrayType = getTypeOfArray(field.type());
-
-                    if (isPrimitiveOrWrapper(arrayType)) {
-                        writer.emitStatement("boxer.add%s%s(\"%s\", boxable.%s)",
-                                unboxedName(arrayType), signature, field.name(), field.getter()
-                        );
-                    } else if (isString(arrayType)) {
-                        writer.emitStatement("boxer.addString%s(\"%s\", boxable.%s)", signature, field.name(), field.getter());
-                    } else if (isEnum(arrayType)) {
-                        writer.emitStatement("boxer.addEnum%s(\"%s\", boxable.%s)", signature, field.name(), field.getter());
-                    } else {
-                        writer.emitStatement("boxer.addBoxable%s(\"%s\", boxable.%s)", signature, field.name(), field.getter());
-                    }
-                }
+            //Check if the element isn't a of the type field or has a transient modifier
+            if(!field.getKind().isField() || field.getModifiers().contains(Modifier.TRANSIENT)){
+                continue;
             }
 
-            writer.endMethod()
-                    .beginMethod(classElement.getQualifiedName().toString(),
-                            METHOD_READ, EnumSet.of(Modifier.PUBLIC, Modifier.STATIC), "Boxer", "boxer")
-                    .emitStatement(original + " boxable = new " + original + "()");
-
-            for (PackedField field : fields) {
-
-                //Check if its an Array
-                if (!field.isArray()) {
-
-                    //Check what type the field is
-                    if (isPrimitiveOrWrapper(field.type())) {
-                        writer.emitStatement("boxable.%s", field.setter(
-                                        String.format("boxer.get%s(\"%s\")", unboxedName(field.type()), field.name()))
-                        );
-                    } else if (isString(field.type())) {
-                        writer.emitStatement("boxable.%s", field.setter(
-                                        String.format("boxer.getString(\"%s\")", field.name()))
-                        );
-                    } else if (isEnum(field.type())) {
-                        writer.emitStatement("boxable.%s", field.setter(
-                                        String.format("boxer.getEnum(\"%s\", %s.class)", field.name(), field.type()))
-                        );
-                    } else {
-                        writer.emitStatement("boxable.%s", field.setter(
-                                        String.format("boxer.getBoxable(\"%s\", %s.class)", field.name(), field.type()))
-                        );
-                    }
-                } else {
-
-                    //get Array type
-                    TypeMirror arrayType = getTypeOfArray(field.type());
-                    if (arrayType != null) {
-
-                        //Check if its an [] or a List
-                        if (field.type().getKind() == TypeKind.ARRAY) {
-
-                            //Check what type the field is
-                            if (isPrimitiveOrWrapper(arrayType)) {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.get%sArray(\"%s\")", unboxedName(field.type()), field.name()))
-                                );
-                            } else if (isString(arrayType)) {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.getStringArray(\"%s\")", field.name()))
-                                );
-                            } else if (isEnum(arrayType)) {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.getEnumArray(\"%s\", %s.class)", field.name(), arrayType))
-                                );
-                            } else {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.getBoxableArray(\"%s\", %s.class)", field.name(), arrayType))
-                                );
-                            }
-                        } else {
-
-                            //Check if the list is of type list or of types like: ArrayList, Stack etc.
-                            String listtype = ((DeclaredType) field.type()).asElement().toString();
-                            TypeMirror declaredListType = typeUtils.getDeclaredType(
-                                    elementUtils.getTypeElement("java.util.List"), arrayType
-                            );
-                            if (typeUtils.isSameType(declaredListType, field.type())) {
-                                if (field.wrapper() != null) {
-                                    listtype = field.wrapper().toString();
-                                } else {
-                                    listtype = "java.util.ArrayList";
-                                }
-                            }
-
-                            //Check what type the field is
-                            if (isPrimitiveOrWrapper(arrayType)) {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.get%sList(\"%s\", %s.class)",
-                                                        unboxedName(arrayType), field.name(), listtype))
-                                );
-                            } else if (isString(arrayType)) {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.getStringList(\"%s\", %s.class)",
-                                                        field.name(), listtype))
-                                );
-                            } else if (isEnum(arrayType)) {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.getEnumList(\"%s\", %s.class, %s.class)",
-                                                        field.name(), arrayType, listtype))
-                                );
-                            } else {
-                                writer.emitStatement("boxable.%s", field.setter(
-                                                String.format("boxer.getBoxableList(\"%s\", %s.class, %s.class)",
-                                                        field.name(), arrayType, listtype))
-                                );
-                            }
-                        }
-                    }
-                }
+            //Check for a Final modifier.
+            if(field.getModifiers().contains(Modifier.FINAL)){
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("%s field can't be final. " +
+                                "Consider making it transient or remove the final modifier",
+                                field.getSimpleName()), typeElement);
             }
-            writer.emitStatement("return boxable")
-                    .endMethod()
-                    .endType()
-                    .close();
-        } catch (IOException e) {
-            log.printMessage(Diagnostic.Kind.ERROR, e.getMessage(), classElement);
+
+            //Check for a Private modifier then check if it doesn't contain default getters and setters.
+            boolean isPrivate = false;
+            if(field.getModifiers().contains(Modifier.PRIVATE) &&
+                    !hasGetterAndSetter(getAllElements(typeElement), field)){
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("%s field is private, " +
+                                "and doesn't have a suitable getter and setter",
+                                field.getSimpleName()), typeElement);
+            } else if(field.getModifiers().contains(Modifier.PRIVATE)){
+                isPrivate = true;
+            }
+
+            //Check if the a wrap annotation exists and is assignable from the class.
+            TypeMirror wrapType = getWrapAnnotationType(field.getAnnotation(Wrap.class));
+            if (wrapType != null && !typeUtils.isAssignable(wrapType, field.asType())) {
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("%s field can't be annotated with a @Wrap annotation " +
+                                        "of a not assignable class of type %s",
+                                field.getSimpleName(), wrapType.toString()), typeElement);
+            }
+
+            if(!isAcceptable(getType(field.asType()))){
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("%s field can't be of type %s and should implement a boxable interface",
+                                field.getSimpleName().toString(), field.asType().toString()));
+            }
+
+            //Check for appropriate field and add the appropriate binding.
+            String methodType = getMethodType(getType(field.asType()));
+            if(isArray(field.asType())){
+                bindings.add(new ArrayFieldBinding(field.getSimpleName().toString(),
+                        methodType, getStoreType(getType(field.asType())), isPrivate));
+            } else if(isList(field.asType())){
+                //Get the type of the list. if it has a Wrap annotation override it.
+                String listType = getListType(field.asType(), getType(field.asType()));
+                if(wrapType != null){
+                    listType = wrapType.toString();
+                }
+
+                bindings.add(new ListFieldBinding(field.getSimpleName().toString(),
+                        methodType, getStoreType(getType(field.asType())), listType, isPrivate));
+            } else {
+                bindings.add(new FieldBinding(field.getSimpleName().toString(),
+                        methodType, getStoreType(getType(field.asType())), isPrivate));
+            }
         }
+        return bindings;
+    }
+
+    private TypeMirror getWrapAnnotationType(Wrap annotation) {
+        if(annotation != null) {
+            try {
+                annotation.value();
+            } catch (MirroredTypeException mte) {
+                return mte.getTypeMirror();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Check if a Field has a getter and setter method.
+     *
+     * @param elements all elements to search through
+     * @param field the current field element we want to check for getters and setters
+     *
+     * @return true if it has a correct getter and setter method, else false.
+     */
+    private boolean hasGetterAndSetter(List<? extends Element> elements, Element field){
+        String fieldName = field.getSimpleName().toString();
+        boolean getter = false;
+        boolean setter = false;
+
+        List<ExecutableElement> methods = ElementFilter.methodsIn(elements);
+        for (ExecutableElement method : methods) {
+            //Checks if it has a get + fieldname method with 0 paramters which returns the same type as the field.
+            if (method.getSimpleName().contentEquals(String.format("get%s", capitalize(fieldName)))
+                    && method.getParameters().size() == 0
+                    && typeUtils.isAssignable(method.getReturnType(), field.asType())) {
+                getter = true;
+                continue;
+            }
+
+            //Checks if it has a set + fieldname method with 1 parameter which accepts the same type as the field is.
+            if (method.getSimpleName().contentEquals(String.format("set%s", capitalize(fieldName)))
+                    && method.getParameters().size() == 1
+                    && typeUtils.isAssignable(method.getParameters().get(0).asType(), field.asType())) {
+                setter = true;
+            }
+        }
+        return getter && setter;
+    }
+
+    private String getMethodType(TypeMirror type){
+        if(isString(type)){
+            return "String";
+        } else if(isBoxable(type)){
+            return "Boxable";
+        } else if(isEnum(type)) {
+            return "Enum";
+        }
+
+        //Its a primitive or wrapper and we should unbox it.
+        return unboxed(type);
+    }
+
+    private String getStoreType(TypeMirror type){
+        if(isBoxable(type)){
+            return type.toString();
+        } else if(isEnum(type)){
+            return type.toString();
+        }
+        return null;
     }
 
     private boolean isAcceptable(TypeMirror type) {
         return (isPrimitiveOrWrapper(type)
-                || typeUtils.isAssignable(type, TYPE_BOXABLE)
-                || typeUtils.isSameType(type, TYPE_STRING));
+                || isString(type)
+                || isBoxable(type)
+                || isEnum(type));
     }
 
-    private String unboxedName(TypeMirror type) {
+    private String unboxed(TypeMirror type) {
         if (type.getKind().isPrimitive()) {
             return capitalize(type.toString());
         }
@@ -394,29 +250,49 @@ public class BoxerProcessor extends AbstractProcessor {
                 || type.toString().equals("java.lang.Boolean"));
     }
 
-    public boolean isString(TypeMirror type) {
+    private boolean isString(TypeMirror type) {
         return typeUtils.isSameType(type, TYPE_STRING);
     }
 
-    public boolean isEnum(TypeMirror type) {
+    private boolean isBoxable(TypeMirror type){
+        return typeUtils.isAssignable(type, TYPE_BOXABLE);
+    }
+
+    private boolean isEnum(TypeMirror type) {
         Element element = typeUtils.asElement(type);
         return element != null && element
                 .getKind() == ElementKind.ENUM;
     }
 
     private boolean isArray(TypeMirror type) {
-        return type.getKind() == TypeKind.ARRAY || typeUtils.isAssignable(type, TYPE_LIST);
+        return type.getKind() == TypeKind.ARRAY;
     }
 
-    private TypeMirror getTypeOfArray(TypeMirror type) {
-        if (type.getKind() == TypeKind.ARRAY) {
-            return elementUtils.getTypeElement(type.toString().substring(0, type.toString().length() - 2)).asType();
-        } else {
+    private boolean isList(TypeMirror type){
+        return typeUtils.isAssignable(type, TYPE_LIST);
+    }
+
+    private TypeMirror getType(TypeMirror type){
+        if(isArray(type)){
+            return ((ArrayType) type).getComponentType();
+        } else if(isList(type)){
             return ((DeclaredType) type).getTypeArguments().get(0);
         }
+        return type;
     }
 
-    private String getPackage(TypeElement type) throws IOException {
+    private String getListType(TypeMirror type, TypeMirror arrayType){
+        TypeMirror declaredListType = typeUtils.getDeclaredType(
+                elementUtils.getTypeElement("java.util.List"), arrayType);
+
+        //Check if the list type is the abstract List and make it an default ArrayList
+        if (typeUtils.isSameType(declaredListType, type)) {
+            return "java.util.ArrayList";
+        }
+        return ((DeclaredType) type).asElement().toString();
+    }
+
+    private String getPackage(TypeElement type) {
         PackageElement pkg = elementUtils.getPackageOf(type);
         if (!pkg.isUnnamed()) {
             return pkg.getQualifiedName().toString();
@@ -437,7 +313,7 @@ public class BoxerProcessor extends AbstractProcessor {
         return fieldElements;
     }
 
-    private String capitalize(String string) {
+    public static String capitalize(String string) {
         return string.substring(0, 1).toUpperCase() + string.substring(1);
     }
 

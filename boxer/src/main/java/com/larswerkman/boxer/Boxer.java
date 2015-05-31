@@ -193,7 +193,7 @@ public abstract class Boxer {
     protected <A extends Boxer, B extends Boxable, T> T storeBoxable(Class<A> sub, B boxable, T object){
         try {
             Class boxer = boxableClass(boxable.getClass());
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, boxable.getClass(), Boxer.class);
+            Method method = boxer.getMethod(BoxerProcessor.METHOD_SERIALIZE, boxable.getClass(), Boxer.class);
             A wrapper = sub.getDeclaredConstructor(Object.class).newInstance(object);
             method.invoke(null, boxable, wrapper);
         } catch (Exception e){}
@@ -211,7 +211,7 @@ public abstract class Boxer {
     protected <A extends Boxer, B extends Boxable> void storeBoxable(A wrapper, B boxable){
         try {
             Class boxer = boxableClass(boxable.getClass());
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_WRITE, boxable.getClass(), Boxer.class);
+            Method method = boxer.getMethod(BoxerProcessor.METHOD_SERIALIZE, boxable.getClass(), Boxer.class);
             method.invoke(null, boxable, wrapper);
         } catch (Exception e){}
     }
@@ -231,7 +231,7 @@ public abstract class Boxer {
         B value = null;
         try {
             Class boxer = boxableClass(boxable);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
+            Method method = boxer.getMethod(BoxerProcessor.METHOD_DESERIALIZE, Boxer.class);
             A wrapper = sub.getDeclaredConstructor(Object.class).newInstance(object);
             value = (B) method.invoke(null, wrapper);
         } catch (Exception e){};
@@ -251,7 +251,7 @@ public abstract class Boxer {
         B value = null;
         try{
             Class boxer = boxableClass(boxable);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_READ, Boxer.class);
+            Method method = boxer.getMethod(BoxerProcessor.METHOD_DESERIALIZE, Boxer.class);
             value = (B) method.invoke(null, wrapper);
         } catch (Exception e){}
         return value;

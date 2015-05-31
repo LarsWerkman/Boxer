@@ -2,7 +2,7 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 dependencies {
-    compile 'com.squareup:javawriter:2.5.0'
+    compile 'com.squareup:javapoet:1.1.0'
 
     //Testing dependency's
     testCompile group: 'junit', name: 'junit', version: '4.12'
