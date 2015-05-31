@@ -21,6 +21,7 @@ public class SQLiteWrapper extends Boxer {
     private static final String COLUMN_VALUE = "value";
     private static final String COLUMN_INDEX = "pos";
 
+    private static final String TABLE_BOXABLE = "boxable_table_boxer";
     private static final String TABLE_STRING = "string_table_boxer";
     private static final String TABLE_STRING_ARRAY = "string_array_table_boxer";
     private static final String TABLE_INTEGER = "integer_table_boxer";
@@ -48,6 +49,7 @@ public class SQLiteWrapper extends Boxer {
         createArrayTable(TABLE_REAL_ARRAY, "REAL");
         createTable(TABLE_BLOB, "BLOB");
         createTable(TABLE_ARRAY_SIZE, "INTEGER");
+        createTable(TABLE_BOXABLE, "INTEGER");
     }
 
     private SQLiteWrapper(Object object, String identifier){
@@ -88,6 +90,10 @@ public class SQLiteWrapper extends Boxer {
 
     @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
+        ContentValues content = new ContentValues();
+        content.put(COLUMN_VALUE, 1);
+        addKeyValue(getIdentifier(key), content, TABLE_BOXABLE);
+
         storeBoxable(new SQLiteWrapper(database, getIdentifier(key)), value);
     }
 
@@ -393,13 +399,18 @@ public class SQLiteWrapper extends Boxer {
 
     @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
+        Cursor cursor = getKeyValue(getIdentifier(key), TABLE_BOXABLE);
+        if(cursor == null || cursor.getCount() == 0){
+            return null;
+        }
+
         return retrieveBoxable(new SQLiteWrapper(database, getIdentifier(key)), clazz);
     }
 
     @Override
     public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_ARRAY_SIZE);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
         cursor.moveToFirst();
@@ -415,7 +426,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_ARRAY_SIZE);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
         cursor.moveToFirst();
@@ -478,7 +489,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public String getString(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_STRING);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -489,7 +500,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public String[] getStringArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_STRING_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -503,7 +514,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<String>> T getStringList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_STRING_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -520,7 +531,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public boolean getBoolean(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_INTEGER);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return false;
         }
 
@@ -531,7 +542,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public boolean[] getBooleanArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -545,7 +556,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<Boolean>> T getBooleanList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -562,7 +573,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public byte getByte(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_INTEGER);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return 0;
         }
 
@@ -573,7 +584,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public byte[] getByteArray(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_BLOB);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -601,7 +612,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public char getChar(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_INTEGER);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return 0;
         }
 
@@ -612,7 +623,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public char[] getCharArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -626,7 +637,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<Character>> T getCharList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -643,7 +654,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public short getShort(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_INTEGER);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return 0;
         }
 
@@ -654,7 +665,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public short[] getShortArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -668,7 +679,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<Short>> T getShortList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -685,7 +696,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public int getInt(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_INTEGER);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return 0;
         }
 
@@ -696,7 +707,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public int[] getIntArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -710,7 +721,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<Integer>> T getIntList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -727,7 +738,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public long getLong(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_INTEGER);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return 0;
         }
 
@@ -738,7 +749,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public long[] getLongArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -752,7 +763,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<Long>> T getLongList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -769,7 +780,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public double getDouble(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_INTEGER);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return 0;
         }
 
@@ -780,7 +791,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public double[] getDoubleArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -794,7 +805,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<Double>> T getDoubleList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_INTEGER_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -811,7 +822,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public float getFloat(String key) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_REAL);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return 0;
         }
 
@@ -822,7 +833,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public float[] getFloatArray(String key) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_REAL_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
@@ -836,7 +847,7 @@ public class SQLiteWrapper extends Boxer {
     @Override
     public <T extends List<Float>> T getFloatList(String key, Class<T> listtype) {
         Cursor cursor = getKeyValues(getIdentifier(key), TABLE_REAL_ARRAY);
-        if(cursor == null){
+        if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 

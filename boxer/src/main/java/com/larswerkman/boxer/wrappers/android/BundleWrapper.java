@@ -258,6 +258,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
         Bundle bundle = this.bundle.getBundle(key);
+        if(bundle == null) {
+            return null;
+        }
+
         int size = bundle.getInt("size");
         T[] boxables = (T[]) Array.newInstance(clazz, size);
         for(int i = 0; i < size; i++){
@@ -269,6 +273,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
         Bundle bundle = this.bundle.getBundle(key);
+        if(bundle == null) {
+            return null;
+        }
+
         int size = bundle.getInt("size");
         E boxables = null;
         try {
@@ -297,6 +305,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends Enum> T[] getEnumArray(String key, Class<T> clazz) {
         String[] values = this.bundle.getStringArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T[] enums = (T[]) Array.newInstance(clazz, values.length);
         for(int i = 0; i < values.length; i++){
             enums[i] = retrieveEnum(values[i], clazz);
@@ -307,6 +319,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends Enum, E extends List<T>> E getEnumList(String key, Class<T> clazz, Class<E> listtype) {
         String[] values = this.bundle.getStringArray(key);
+        if(values == null) {
+            return null;
+        }
+
         E enums = null;
         try {
             enums = listtype.newInstance();
@@ -330,6 +346,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<String>> T getStringList(String key, Class<T> listtype) {
         String[] values = this.bundle.getStringArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T strings = null;
         try {
             strings = listtype.newInstance();
@@ -353,6 +373,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Boolean>> T getBooleanList(String key, Class<T> listtype) {
         boolean[] values = this.bundle.getBooleanArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T booleans = null;
         try {
             booleans = listtype.newInstance();
@@ -376,6 +400,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Byte>> T getByteList(String key, Class<T> listtype) {
         byte[] values = this.bundle.getByteArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T bytes = null;
         try {
             bytes = listtype.newInstance();
@@ -399,6 +427,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Character>> T getCharList(String key, Class<T> listtype) {
         char[] values = this.bundle.getCharArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T chars = null;
         try {
             chars = listtype.newInstance();
@@ -422,6 +454,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Short>> T getShortList(String key, Class<T> listtype) {
         short[] values = this.bundle.getShortArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T shorts = null;
         try {
             shorts = listtype.newInstance();
@@ -445,6 +481,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Integer>> T getIntList(String key, Class<T> listtype) {
         int[] values = this.bundle.getIntArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T ints = null;
         try {
             ints = listtype.newInstance();
@@ -468,6 +508,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Long>> T getLongList(String key, Class<T> listtype) {
         long[] values = this.bundle.getLongArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T longs = null;
         try {
             longs = listtype.newInstance();
@@ -491,6 +535,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Double>> T getDoubleList(String key, Class<T> listtype) {
         double[] values = this.bundle.getDoubleArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T doubles = null;
         try {
             doubles = listtype.newInstance();
@@ -514,6 +562,10 @@ public class BundleWrapper extends Boxer {
     @Override
     public <T extends List<Float>> T getFloatList(String key, Class<T> listtype) {
         float[] values = this.bundle.getFloatArray(key);
+        if(values == null) {
+            return null;
+        }
+
         T floats = null;
         try {
             floats = listtype.newInstance();

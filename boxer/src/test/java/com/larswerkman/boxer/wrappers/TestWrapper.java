@@ -1,12 +1,9 @@
 package com.larswerkman.boxer.wrappers;
 
-import android.os.Bundle;
-import com.google.common.primitives.*;
 import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -212,6 +209,10 @@ public class TestWrapper extends Boxer {
     @Override
     public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
         HashMap<String, Object> values = (HashMap<String, Object>) map.get(key);
+        if(values == null){
+            return null;
+        }
+
         int size = (Integer) values.get("size");
         T[] boxables = (T[]) Array.newInstance(clazz, size);
         for(int i = 0; i < size; i++){
@@ -223,6 +224,10 @@ public class TestWrapper extends Boxer {
     @Override
     public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
         HashMap<String, Object> values = (HashMap<String, Object>) map.get(key);
+        if(values == null){
+            return null;
+        }
+
         int size = (Integer) values.get("size");
         E boxables = null;
         try {
@@ -266,7 +271,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public boolean getBoolean(String key) {
-        return (Boolean) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return false;
+        }
+
+        return (Boolean) value;
     }
 
     @Override
@@ -281,7 +291,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public byte getByte(String key) {
-        return (Byte) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return 0;
+        }
+
+        return (Byte) value;
     }
 
     @Override
@@ -296,7 +311,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public char getChar(String key) {
-        return (Character) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return 0;
+        }
+
+        return (Character) value;
     }
 
     @Override
@@ -311,7 +331,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public short getShort(String key) {
-        return (Short) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return 0;
+        }
+
+        return (Short) value;
     }
 
     @Override
@@ -326,7 +351,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public int getInt(String key) {
-        return (Integer) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return 0;
+        }
+
+        return (Integer) value;
     }
 
     @Override
@@ -341,7 +371,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public long getLong(String key) {
-        return (Long) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return 0;
+        }
+
+        return (Long) value;
     }
 
     @Override
@@ -356,7 +391,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public double getDouble(String key) {
-        return (Double) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return 0;
+        }
+
+        return (Double) value;
     }
 
     @Override
@@ -371,7 +411,12 @@ public class TestWrapper extends Boxer {
 
     @Override
     public float getFloat(String key) {
-        return (Float) map.get(key);
+        Object value = map.get(key);
+        if(value == null){
+            return 0;
+        }
+
+        return (Float) value;
     }
 
     @Override

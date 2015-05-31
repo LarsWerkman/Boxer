@@ -274,6 +274,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
         ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
+        if(dataMaps == null){
+            return null;
+        }
+
         T[] boxables = (T[]) Array.newInstance(clazz, dataMaps.size());
         for(int i = 0; i < dataMaps.size(); i++){
             boxables[i] = retrieveBoxable(getClass(), clazz, dataMaps.get(i));
@@ -284,6 +288,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
         ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
+        if(dataMaps == null){
+            return null;
+        }
+
         E boxables = null;
         try {
             boxables = listtype.newInstance();
@@ -311,6 +319,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends Enum> T[] getEnumArray(String key, Class<T> clazz) {
         String[] values = this.dataMap.getStringArray(key);
+        if(values == null){
+            return null;
+        }
+
         T[] enums = (T[]) Array.newInstance(clazz, values.length);
         for(int i = 0; i < values.length; i++){
             enums[i] = retrieveEnum(values[i], clazz);
@@ -321,6 +333,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends Enum, E extends List<T>> E getEnumList(String key, Class<T> clazz, Class<E> listtype) {
         String[] values = this.dataMap.getStringArray(key);
+        if(values == null){
+            return null;
+        }
+
         E enums = null;
         try {
             enums = listtype.newInstance();
@@ -344,6 +360,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<String>> T getStringList(String key, Class<T> listtype) {
         String[] values = this.dataMap.getStringArray(key);
+        if(values == null){
+            return null;
+        }
+
         T strings = null;
         try {
             strings = listtype.newInstance();
@@ -362,6 +382,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public boolean[] getBooleanArray(String key) {
         byte[] bytes = this.dataMap.getByteArray(key);
+        if(bytes == null){
+            return null;
+        }
+
         boolean[] bools = new boolean[bytes.length];
         for(int i = 0; i < bytes.length; i++){
             bools[i] = bytes[i] > Byte.MIN_VALUE;
@@ -372,6 +396,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<Boolean>> T getBooleanList(String key, Class<T> listtype) {
         byte[] bytes= this.dataMap.getByteArray(key);
+        if(bytes == null){
+            return null;
+        }
+
         T booleans = null;
         try {
             booleans = listtype.newInstance();
@@ -395,6 +423,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<Byte>> T getByteList(String key, Class<T> listtype) {
         byte[] values = this.dataMap.getByteArray(key);
+        if(values == null){
+            return null;
+        }
+
         T bytes = null;
         try {
             bytes = listtype.newInstance();
@@ -407,19 +439,35 @@ public class DataMapWrapper extends Boxer {
 
     @Override
     public char getChar(String key) {
-        return this.dataMap.getString(key).charAt(0);
+        String chars = this.dataMap.getString(key);
+        if(chars == null){
+            return 0;
+        }
+
+        return chars.charAt(0);
     }
 
     @Override
     public char[] getCharArray(String key) {
-        return this.dataMap.getString(key).toCharArray();
+        String chars = this.dataMap.getString(key);
+        if(chars == null){
+            return null;
+        }
+
+        return chars.toCharArray();
     }
 
     @Override
     public <T extends List<Character>> T getCharList(String key, Class<T> listtype) {
-        char[] values = this.dataMap.getString(key).toCharArray();
+        String value = this.dataMap.getString(key);
+        if(value == null){
+            return null;
+        }
+
+
         T chars = null;
         try {
+            char[] values = value.toCharArray();
             chars = listtype.newInstance();
             for (int i = 0; i < values.length; i++) {
                 chars.add(values[i]);
@@ -436,6 +484,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public short[] getShortArray(String key) {
         long[] values = this.dataMap.getLongArray(key);
+        if(values == null){
+            return null;
+        }
+
         short[] shorts = new short[values.length];
         for(int i = 0; i < values.length; i++){
             shorts[i] = (short) values[i];
@@ -446,6 +498,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<Short>> T getShortList(String key, Class<T> listtype) {
         long[] values = this.dataMap.getLongArray(key);
+        if(values == null){
+            return null;
+        }
+
         T shorts = null;
         try {
             shorts = listtype.newInstance();
@@ -464,6 +520,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public int[] getIntArray(String key) {
         long[] values = this.dataMap.getLongArray(key);
+        if(values == null){
+            return null;
+        }
+
         int[] ints = new int[values.length];
         for(int i = 0; i < ints.length; i++){
             ints[i] = (int) values[i];
@@ -474,6 +534,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<Integer>> T getIntList(String key, Class<T> listtype) {
         long[] values = this.dataMap.getLongArray(key);
+        if(values == null){
+            return null;
+        }
+
         T ints = null;
         try {
             ints = listtype.newInstance();
@@ -497,6 +561,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<Long>> T getLongList(String key, Class<T> listtype) {
         long[] values = this.dataMap.getLongArray(key);
+        if(values == null){
+            return null;
+        }
+
         T longs = null;
         try {
             longs = listtype.newInstance();
@@ -515,6 +583,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public double[] getDoubleArray(String key) {
         float[] values = this.dataMap.getFloatArray(key);
+        if(values == null){
+            return null;
+        }
+
         double[] doubles = new double[values.length];
         for(int i = 0; i < doubles.length; i++){
             doubles[i] = Double.parseDouble(Float.toString(values[i]));
@@ -525,6 +597,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<Double>> T getDoubleList(String key, Class<T> listtype) {
         float[] values = this.dataMap.getFloatArray(key);
+        if(values == null){
+            return null;
+        }
+
         T doubles = null;
         try {
             doubles = listtype.newInstance();
@@ -548,6 +624,10 @@ public class DataMapWrapper extends Boxer {
     @Override
     public <T extends List<Float>> T getFloatList(String key, Class<T> listtype) {
         float[] values = this.dataMap.getFloatArray(key);
+        if(values == null){
+            return null;
+        }
+
         T floats = null;
         try {
             floats = listtype.newInstance();

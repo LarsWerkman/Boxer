@@ -87,6 +87,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void boxable(){
+        Assertions.assertThat(boxer.getBoxable(KEY, PrimaryBoxable.class))
+                .isNull();
+        between();
         boxer.addBoxable(KEY, BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, PrimaryBoxable.class))
@@ -95,6 +98,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void boxableArray(){
+        Assertions.assertThat(boxer.getBoxableArray(KEY, PrimaryBoxable.class))
+                .isNull();
+        between();
         boxer.addBoxableArray(KEY, BOXABLE_ARRAY);
         between();
         Assertions.assertThat(boxer.getBoxableArray(KEY, PrimaryBoxable.class))
@@ -103,6 +109,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void boxableList(){
+        Assertions.assertThat(boxer.getBoxableList(KEY, PrimaryBoxable.class, ArrayList.class))
+                .isNull();
+        between();
         boxer.addBoxableList(KEY, Arrays.asList(BOXABLE_ARRAY));
         between();
         Assertions.assertThat(boxer.getBoxableList(KEY, PrimaryBoxable.class, ArrayList.class))
@@ -111,6 +120,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void Enum(){
+        Assertions.assertThat(boxer.getEnum(KEY, PrimaryEnum.class))
+                .isNull();
+        between();
         boxer.addEnum(KEY, ENUM);
         between();
         Assertions.assertThat(boxer.getEnum(KEY, PrimaryEnum.class))
@@ -119,6 +131,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void enumArray(){
+        Assertions.assertThat(boxer.getEnumArray(KEY, PrimaryEnum.class))
+                .isNull();
+        between();
         boxer.addEnumArray(KEY, ENUM_ARRAY);
         between();
         Assertions.assertThat(boxer.getEnumArray(KEY, PrimaryEnum.class))
@@ -127,6 +142,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void enumList(){
+        Assertions.assertThat(boxer.getEnumList(KEY, PrimaryEnum.class, ArrayList.class))
+                .isNull();
+        between();
         boxer.addEnumList(KEY, Arrays.asList(ENUM_ARRAY));
         between();
         Assertions.assertThat(boxer.getEnumList(KEY, PrimaryEnum.class, ArrayList.class))
@@ -135,6 +153,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void string() {
+        Assertions.assertThat(boxer.getString(KEY))
+                .isNull();
+        between();
         boxer.addString(KEY, STRING);
         between();
         Assertions.assertThat(boxer.getString(KEY))
@@ -143,6 +164,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void stringArray() {
+        Assertions.assertThat(boxer.getStringArray(KEY))
+                .isNull();
+        between();
         boxer.addStringArray(KEY, STRING_ARRAY);
         between();
         Assertions.assertThat(boxer.getStringArray(KEY))
@@ -151,6 +175,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void stringList() {
+        Assertions.assertThat(boxer.getStringList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addStringList(KEY, Arrays.asList(STRING_ARRAY));
         between();
         Assertions.assertThat(boxer.getStringList(KEY, ArrayList.class))
@@ -159,6 +186,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void Boolean(){
+        Assertions.assertThat(boxer.getBoolean(KEY))
+                .isFalse();
+        between();
         boxer.addBoolean(KEY, BOOLEAN);
         between();
         Assertions.assertThat(boxer.getBoolean(KEY))
@@ -167,6 +197,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void booleanArray(){
+        Assertions.assertThat(boxer.getBooleanArray(KEY))
+                .isNull();
+        between();
         boxer.addBooleanArray(KEY, BOOLEAN_ARRAY);
         between();
         Assertions.assertThat(boxer.getBooleanArray(KEY))
@@ -175,6 +208,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void booleanList(){
+        Assertions.assertThat(boxer.getBooleanList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addBooleanList(KEY, Booleans.asList(BOOLEAN_ARRAY));
         between();
         Assertions.assertThat(boxer.getBooleanList(KEY, ArrayList.class))
@@ -183,6 +219,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void Byte(){
+        Assertions.assertThat(boxer.getByte(KEY))
+                .isZero();
+        between();
         boxer.addByte(KEY, BYTE);
         between();
         Assertions.assertThat(boxer.getByte(KEY))
@@ -191,6 +230,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void byteArray(){
+        Assertions.assertThat(boxer.getByteArray(KEY))
+                .isNull();
+        between();
         boxer.addByteArray(KEY, BYTE_ARRAY);
         between();
         Assertions.assertThat(boxer.getByteArray(KEY))
@@ -199,6 +241,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void byteList(){
+        Assertions.assertThat(boxer.getByteList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addByteList(KEY, Bytes.asList(BYTE_ARRAY));
         between();
         Assertions.assertThat(boxer.getByteList(KEY, ArrayList.class))
@@ -207,6 +252,10 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void character(){
+        //Work around because of weird behaviour of AssertJ
+        assert boxer.getChar(KEY) == 0;
+
+        between();
         boxer.addChar(KEY, CHARACTER);
         between();
         Assertions.assertThat(boxer.getChar(KEY))
@@ -215,6 +264,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void characterArray(){
+        Assertions.assertThat(boxer.getCharArray(KEY))
+                .isNull();
+        between();
         boxer.addCharArray(KEY, CHARACTER_ARRAY);
         between();
         Assertions.assertThat(boxer.getCharArray(KEY))
@@ -223,6 +275,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void characterList(){
+        Assertions.assertThat(boxer.getCharList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addCharList(KEY, Chars.asList(CHARACTER_ARRAY));
         between();
         Assertions.assertThat(boxer.getCharList(KEY, ArrayList.class))
@@ -231,6 +286,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void Short(){
+        Assertions.assertThat(boxer.getShort(KEY))
+                .isZero();
+        between();
         boxer.addShort(KEY, SHORT);
         between();
         Assertions.assertThat(boxer.getShort(KEY))
@@ -239,6 +297,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void shortArray(){
+        Assertions.assertThat(boxer.getShortArray(KEY))
+                .isNull();
+        between();
         boxer.addShortArray(KEY, SHORT_ARRAY);
         between();
         Assertions.assertThat(boxer.getShortArray(KEY))
@@ -247,6 +308,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void shortList(){
+        Assertions.assertThat(boxer.getShortList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addShortList(KEY, Shorts.asList(SHORT_ARRAY));
         between();
         Assertions.assertThat(boxer.getShortList(KEY, ArrayList.class))
@@ -255,6 +319,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void integer() {
+        Assertions.assertThat(boxer.getInt(KEY))
+                .isZero();
+        between();
         boxer.addInt(KEY, INTEGER);
         between();
         Assertions.assertThat(boxer.getInt(KEY))
@@ -263,6 +330,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void integerArray() {
+        Assertions.assertThat(boxer.getIntArray(KEY))
+                .isNull();
+        between();
         boxer.addIntArray(KEY, INTEGER_ARRAY);
         between();
         Assertions.assertThat(boxer.getIntArray(KEY))
@@ -271,6 +341,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void integerList() {
+        Assertions.assertThat(boxer.getIntList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addIntList(KEY, Ints.asList(INTEGER_ARRAY));
         between();
         Assertions.assertThat(boxer.getIntList(KEY, ArrayList.class))
@@ -279,6 +352,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void Long(){
+        Assertions.assertThat(boxer.getLong(KEY))
+                .isZero();
+        between();
         boxer.addLong(KEY, LONG);
         between();
         Assertions.assertThat(boxer.getLong(KEY))
@@ -287,6 +363,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void longArray(){
+        Assertions.assertThat(boxer.getLongArray(KEY))
+                .isNull();
+        between();
         boxer.addLongArray(KEY, LONG_ARRAY);
         between();
         Assertions.assertThat(boxer.getLongArray(KEY))
@@ -295,6 +374,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void longList(){
+        Assertions.assertThat(boxer.getLongList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addLongList(KEY, Longs.asList(LONG_ARRAY));
         between();
         Assertions.assertThat(boxer.getLongList(KEY, ArrayList.class))
@@ -303,6 +385,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void Double(){
+        Assertions.assertThat(boxer.getDouble(KEY))
+                .isZero();
+        between();
         boxer.addDouble(KEY, DOUBLE);
         between();
         Assertions.assertThat(boxer.getDouble(KEY))
@@ -311,6 +396,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void doubleArray(){
+        Assertions.assertThat(boxer.getDoubleArray(KEY))
+                .isNull();
+        between();
         boxer.addDoubleArray(KEY, DOUBLE_ARRAY);
         between();
         Assertions.assertThat(boxer.getDoubleArray(KEY))
@@ -319,6 +407,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void doubleList(){
+        Assertions.assertThat(boxer.getDoubleList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addDoubleList(KEY, Doubles.asList(DOUBLE_ARRAY));
         between();
         Assertions.assertThat(boxer.getDoubleList(KEY, ArrayList.class))
@@ -327,6 +418,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void Float(){
+        Assertions.assertThat(boxer.getFloat(KEY))
+                .isZero();
+        between();
         boxer.addFloat(KEY, FLOAT);
         between();
         Assertions.assertThat(boxer.getFloat(KEY))
@@ -335,6 +429,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void floatArray(){
+        Assertions.assertThat(boxer.getFloatArray(KEY))
+                .isNull();
+        between();
         boxer.addFloatArray(KEY, FLOAT_ARRAY);
         between();
         Assertions.assertThat(boxer.getFloatArray(KEY))
@@ -343,6 +440,9 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void floatList(){
+        Assertions.assertThat(boxer.getFloatList(KEY, ArrayList.class))
+                .isNull();
+        between();
         boxer.addFloatList(KEY, Floats.asList(FLOAT_ARRAY));
         between();
         Assertions.assertThat(boxer.getFloatList(KEY, ArrayList.class))
