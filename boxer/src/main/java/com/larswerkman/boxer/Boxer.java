@@ -36,6 +36,14 @@ import java.util.*;
 public abstract class Boxer {
 
     private static HashMap<Class, Class<? extends Boxer>> wrappers = new HashMap<Class, Class<? extends Boxer>>();
+    private static HashMap<String, Class<? extends Boxer>> defaultWrappers = new HashMap<String, Class<? extends Boxer>>();
+
+    static {
+        defaultWrappers.put("android.os.Bundle", BundleWrapper.class);
+        defaultWrappers.put("android.os.Parcel", ParcelWrapper.class);
+        defaultWrappers.put("com.google.android.gms.wearable.DataMap", DataMapWrapper.class);
+        defaultWrappers.put("android.database.sqlite.SQLiteDatabase", SQLiteWrapper.class);
+    }
 
     /**
      * Empty constructor, Can't be a generic type because of ClassNotFoundException
@@ -47,40 +55,21 @@ public abstract class Boxer {
 
     /**
      * Retrieve correct wrapper of object for serialization
-     * @param object find wrapper for following objects:
-     *               <p>
-     *               {@link android.os.Bundle}. <br>
-     *               {@link android.os.Parcel}. <br>
-     *               {@link com.google.android.gms.wearable.DataMap}
-     *               </p>
+     * @param object Object to find wrapper for
+     *
      * @return instance of {@link com.larswerkman.boxer.Boxer}
      * or Null if there's no wrapper class known.
      */
     public static Boxer from(Object object) {
-        try {
-            if (Class.forName("android.os.Bundle")
-                    .isAssignableFrom(object.getClass())) {
-                return new BundleWrapper(object);
-            }
-        } catch (ClassNotFoundException e) {/*Do nothing*/}
-        try {
-            if (Class.forName("android.os.Parcel")
-                    .isAssignableFrom(object.getClass())) {
-                return new ParcelWrapper(object);
-            }
-        } catch (ClassNotFoundException e) {/*Do nothing*/}
-        try {
-            if (Class.forName("com.google.android.gms.wearable.DataMap")
-                    .isAssignableFrom(object.getClass())) {
-                return new DataMapWrapper(object);
-            }
-        } catch (ClassNotFoundException e) {/*Do nothing*/}
-        try {
-            if (Class.forName("android.database.sqlite.SQLiteDatabase")
-                    .isAssignableFrom(object.getClass())){
-                return new SQLiteWrapper(object);
-            }
-        } catch (ClassNotFoundException e){/*Do nothing*/}
+        for(String target : defaultWrappers.keySet()){
+            try{
+                if(Class.forName(target).isAssignableFrom(object.getClass())){
+                    return defaultWrappers.get(target)
+                            .getDeclaredConstructor(Object.class).newInstance(object);
+                }
+            } catch (Exception e){/*Do nothing*/}
+        }
+
         try {
             Class<? extends Boxer> wrapper = null;
             if(wrappers.containsKey(object.getClass())){
