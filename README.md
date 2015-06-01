@@ -79,14 +79,13 @@ Current supported supported classes:
 * (Android) SQLiteDatabase (Experimental)
 * (Java/Android) DataMap
 
-__Still in early alpha phase!__
+__Beta phase!__
 
 Proguard
 ----------
 ```groovy
 -dontwarn com.larswerkman.boxer.internal.**
 -dontwarn com.larswerkman.boxer.wrappers.**
--dontwarn com.squareup.javawriter.JavaWriter
 -keep class **$Boxer { *; }
 -keepnames class * { @com.larswerkman.boxer.annotations.Box *;}
 ```
