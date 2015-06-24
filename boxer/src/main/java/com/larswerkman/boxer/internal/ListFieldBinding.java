@@ -1,14 +1,19 @@
 package com.larswerkman.boxer.internal;
 
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.TypeName;
+
+import javax.lang.model.type.TypeMirror;
+
 /**
  * Created by lars on 29-05-15.
  */
 class ListFieldBinding extends FieldBinding {
 
-    private String listType;
+    TypeName listType;
 
-    public ListFieldBinding(String name, String method, String type, String listType, boolean isPrivate) {
-        super(name, method, type, isPrivate);
+    public ListFieldBinding(String name, TypeMirror type, String method, TypeName listType, boolean isPrivate) {
+        super(name, type, method , isPrivate);
         this.listType = listType;
     }
 
@@ -18,22 +23,25 @@ class ListFieldBinding extends FieldBinding {
     }
 
     @Override
-    public String deserialize(String boxer, String boxable) {
+    public CodeBlock deserialize(String boxer, String boxable) {
+        CodeBlock.Builder builder = CodeBlock.builder();
         if(isPrivate){
             if(type == null){
-                return String.format("%s.set%s(%s.get%s(\"%s\", %s.class))",
+                builder.addStatement("$N.set$N($N.get$N($S, $T.class))",
                         boxable, BoxerProcessor.capitalize(name), boxer, method(), name, listType);
             } else {
-                return String.format("%s.set%s(%s.get%s(\"%s\", %s.class, %s.class))",
+                builder.addStatement("$N.set$N($N.get$N($S, $T.class, $T.class))",
                         boxable, BoxerProcessor.capitalize(name), boxer, method(), name, type, listType);
             }
-        }
-        if(type == null){
-            return String.format("%s.%s = %s.get%s(\"%s\", %s.class)",
-                    boxable, name, boxer, method(), name, listType);
         } else {
-            return String.format("%s.%s = %s.get%s(\"%s\", %s.class, %s.class)",
-                    boxable, name, boxer, method(), name, type, listType);
+            if (type == null) {
+                builder.addStatement("$N.$N = $N.get$N($S, $T.class)",
+                        boxable, name, boxer, method(), name, listType);
+            } else {
+                builder.addStatement("$N.$N = $N.get$N($S, $T.class, $T.class)",
+                        boxable, name, boxer, method(), name, type, listType);
+            }
         }
+        return builder.build();
     }
 }

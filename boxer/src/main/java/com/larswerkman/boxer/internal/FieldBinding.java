@@ -1,5 +1,9 @@
 package com.larswerkman.boxer.internal;
 
+import com.squareup.javapoet.CodeBlock;
+
+import javax.lang.model.type.TypeMirror;
+
 /**
  * Created by lars on 27-05-15.
  */
@@ -7,10 +11,10 @@ class FieldBinding {
 
     String name;
     String method;
-    String type;
+    TypeMirror type;
     boolean isPrivate;
 
-    public FieldBinding(String name, String method, String type, boolean isPrivate){
+    public FieldBinding(String name, TypeMirror type, String method, boolean isPrivate){
         this.name = name;
         this.method = method;
         this.type = type;
@@ -21,31 +25,37 @@ class FieldBinding {
         return method;
     }
 
-    public String serialize(String boxer, String boxable){
+    public CodeBlock serialize(String boxer, String boxable){
+        CodeBlock.Builder builder = CodeBlock.builder();
         if(isPrivate){
-            return String.format("%s.add%s(\"%s\", %s.get%s())",
+            builder.addStatement("$N.add$N($S, $N.get$N())",
                     boxer, method(), name, boxable, BoxerProcessor.capitalize(name));
+        } else {
+            builder.addStatement("$N.add$N($S, $N.$N)",
+                    boxer, method(), name, boxable, name);
         }
-        return String.format("%s.add%s(\"%s\", %s.%s)",
-                boxer, method(), name, boxable, name);
+        return builder.build();
     }
 
-    public String deserialize(String boxer, String boxable){
+    public CodeBlock deserialize(String boxer, String boxable){
+        CodeBlock.Builder builder = CodeBlock.builder();
         if(isPrivate){
             if(type == null){
-                return String.format("%s.set%s(%s.get%s(\"%s\"))",
+                builder.addStatement("$N.set$N($N.get$N($S))",
                         boxable, BoxerProcessor.capitalize(name), boxer, method(), name);
             } else {
-                return String.format("%s.set%s(%s.get%s(\"%s\", %s.class))",
+                builder.addStatement("$N.set$N($N.get$N($S, $T.class))",
                         boxable, BoxerProcessor.capitalize(name), boxer, method(), name, type);
             }
-        }
-        if(type == null){
-            return String.format("%s.%s = %s.get%s(\"%s\")",
-                    boxable, name, boxer, method(), name);
         } else {
-            return String.format("%s.%s = %s.get%s(\"%s\", %s.class)",
-                    boxable, name, boxer, method(), name, type);
+            if (type == null) {
+                builder.addStatement("$N.$N = $N.get$N($S)",
+                        boxable, name, boxer, method(), name);
+            } else {
+                builder.addStatement("$N.$N = $N.get$N($S, $T.class)",
+                        boxable, name, boxer, method(), name, type);
+            }
         }
+        return builder.build();
     }
 }

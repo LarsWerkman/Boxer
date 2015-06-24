@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Lars Werkman
+ * Copyright 2015 Lars Werkman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,13 +27,15 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
- * Boxer class used for serialization.
+ * Abstract wrapper class, used to deserialize wrapper.
  *
  * <p>
- *     Use {@link #from(Object)} to retrieve the correct Wrapper for serialization
+ *     Use {@link #from(Object)} to deserialize a boxer instance.
  * </p>
+ *
+ * @param <S> Type of wrapper
  */
-public abstract class Boxer {
+public abstract class Boxer<S> {
 
     private static HashMap<Class, Class<? extends Boxer>> wrappers = new HashMap<Class, Class<? extends Boxer>>();
     private static HashMap<String, Class<? extends Boxer>> defaultWrappers = new HashMap<String, Class<? extends Boxer>>();
@@ -45,12 +47,15 @@ public abstract class Boxer {
         defaultWrappers.put("android.database.sqlite.SQLiteDatabase", SQLiteWrapper.class);
     }
 
+    private S instance;
+
     /**
-     * Empty constructor, Can't be a generic type because of ClassNotFoundException
-     * @param object Serialization object
+     * Default constructor for initialization
+     *
+     * @param instance to serialize to and deserialize from
      */
-    public Boxer(Object object) {
-        //Ensure the wrapper classes have a default constructor
+    public Boxer(S instance) {
+        this.instance = instance;
     }
 
     /**
@@ -60,14 +65,14 @@ public abstract class Boxer {
      * @return instance of {@link com.larswerkman.boxer.Boxer}
      * or Null if there's no wrapper class known.
      */
-    public static Boxer from(Object object) {
+    @SuppressWarnings("unchecked")
+    public static <T> Boxer<T> from(T object) {
         for(String target : defaultWrappers.keySet()){
             try{
                 if(Class.forName(target).isAssignableFrom(object.getClass())){
-                    return defaultWrappers.get(target)
-                            .getDeclaredConstructor(Object.class).newInstance(object);
+                    return defaultWrappers.get(target).getDeclaredConstructor(object.getClass()).newInstance(object);
                 }
-            } catch (Exception e){/*Do nothing*/}
+            } catch (Exception ignored){}
         }
 
         try {
@@ -83,9 +88,9 @@ public abstract class Boxer {
                 }
             }
             if(wrapper != null) {
-                return wrapper.getDeclaredConstructor(Object.class).newInstance(object);
+                return wrapper.getDeclaredConstructor(object.getClass()).newInstance(object);
             }
-        } catch (Exception e){/*Do nothing*/}
+        } catch (Exception ignored){}
         return null;
     }
 
@@ -93,8 +98,7 @@ public abstract class Boxer {
      * Returns the fields of a specific class which will be serialized.
      *
      * @param clazz The boxbale class you want to inspect
-     * @return An {@link java.util.List} of fields, will return an empty
-     *         {@link java.util.List} when there are no fields to be serialized
+     * @return An {@link java.util.List} of fields, will return an empty list if there are none.
      */
     public static List<Field> getBoxableFields(Class<? extends Boxable> clazz){
         List<Field> fields = new ArrayList<Field>();
@@ -168,127 +172,183 @@ public abstract class Boxer {
         wrappers.clear();
     }
 
+
     /**
-     * Stores a filled {@link com.larswerkman.boxer.Boxable} object.
+     * Helper method used to serialize an object which has a
+     * {@link TypeAdapter} to the specified wrapper.
      *
-     * @param sub Subclass of the abstract {@link com.larswerkman.boxer.Boxer} class
-     * @param boxable object to be stored
-     * @param object Object to store the boxable in
-     * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
-     * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
-     * @param <T> Generic serialization object
-     * @return A the filled instance of the {@link T} object that is given
+     * @param wrapper {@link Boxer} instance to serialize to.
+     * @param value Object which has a {@link TypeAdapter}
+     *
+     * @return The wrappers instance to which the value has been serialized.
      */
-    protected <A extends Boxer, B extends Boxable, T> T storeBoxable(Class<A> sub, B boxable, T object){
-        try {
-            Class boxer = boxableClass(boxable.getClass());
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_SERIALIZE, boxable.getClass(), Boxer.class);
-            A wrapper = sub.getDeclaredConstructor(Object.class).newInstance(object);
-            method.invoke(null, boxable, wrapper);
-        } catch (Exception e){}
-        return object;
+    @SuppressWarnings("unchecked")
+    protected <T, U> U serialize(Boxer<U> wrapper, T value){
+        getTypeAdapter((Class<T>) value.getClass()).serialize(wrapper, value);
+        return wrapper.instance;
     }
 
     /**
-     * Stores a filled {@link com.larswerkman.boxer.Boxable} object.
+     * Helper method to serialize a {@link Boxable} class to the specified wrapper.
      *
-     * @param wrapper subclass of the abstract {@link com.larswerkman.boxer.Boxer} class
-     * @param boxable object to be stored
-     * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
-     * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
+     * @param wrapper {@link Boxer} instance to serialize to.
+     * @param boxable Object of type {@link Boxable} to be serialized.
+     *
+     * @return The wrappers {@link #instance} to which the value has been serialized.
      */
-    protected <A extends Boxer, B extends Boxable> void storeBoxable(A wrapper, B boxable){
+    @SuppressWarnings("unchecked")
+    protected <B extends Boxable, U> U serializeBoxable(Boxer<U> wrapper, B boxable){
         try {
             Class boxer = boxableClass(boxable.getClass());
             Method method = boxer.getMethod(BoxerProcessor.METHOD_SERIALIZE, boxable.getClass(), Boxer.class);
             method.invoke(null, boxable, wrapper);
-        } catch (Exception e){}
+        } catch (Exception ignored){}
+        return wrapper.instance;
     }
 
     /**
-     * Retrieves a filled {@link com.larswerkman.boxer.Boxable} object.
+     * Helper method to deserialize a specific type which has a {@link TypeAdapter}
+     * from a specific wrapper.
      *
-     * @param sub Subclass of the abstract {@link com.larswerkman.boxer.Boxer} class
-     * @param boxable Type of stored boxable
-     * @param object Object to retrieve data from.
-     * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
-     * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
-     * @param <T> Generic serialization object
-     * @return A restored {@link com.larswerkman.boxer.Boxable} object of type {@link A}
+     * @param wrapper {@link Boxer} instance to deserialize from.
+     * @param type Type which has a {@link TypeAdapter}.
+     *
+     * @return a deserialized instance of the give type.
      */
-    protected <A extends Boxer, B extends Boxable, T> B retrieveBoxable(Class<A> sub, Class<B> boxable, T object){
-        B value = null;
-        try {
-            Class boxer = boxableClass(boxable);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_DESERIALIZE, Boxer.class);
-            A wrapper = sub.getDeclaredConstructor(Object.class).newInstance(object);
-            value = (B) method.invoke(null, wrapper);
-        } catch (Exception e){};
-        return value;
+    protected <T> T deserialize(Boxer wrapper, Class<T> type){
+        return getTypeAdapter(type).deserialize(wrapper);
     }
 
     /**
-     * Retrieves a filled {@link com.larswerkman.boxer.Boxable} object.
+     * Helper method to deserialize a {@link Boxable} class from a specific wrapper.
      *
-     * @param wrapper Subclass of the abstract {@link com.larswerkman.boxer.Boxer} class
-     * @param boxable Type of stored boxable
-     * @param <A> Subclass of {@link com.larswerkman.boxer.Boxer}
-     * @param <B> Should implement the {@link com.larswerkman.boxer.Boxable} interface
-     * @return A restored {@link com.larswerkman.boxer.Boxable} object of the type {@link A}
+     * @param wrapper {@link Boxer} instance to deserialize from.
+     * @param boxable Type of {@link Boxable} to be deserialized
+     *
+     * @return a deserialized instance of the given type.
      */
-    protected  <A extends Boxer, B extends Boxable> B retrieveBoxable(A wrapper, Class<B> boxable){
+    @SuppressWarnings("unchecked")
+    protected  <B extends Boxable> B deserializeBoxable(Boxer wrapper, Class<B> boxable){
         B value = null;
         try{
             Class boxer = boxableClass(boxable);
             Method method = boxer.getMethod(BoxerProcessor.METHOD_DESERIALIZE, Boxer.class);
             value = (B) method.invoke(null, wrapper);
-        } catch (Exception e){}
+        } catch (Exception ignored){}
         return value;
     }
 
-    private static <T extends Boxable> Class<?> boxableClass(Class<T> tClass) throws ClassNotFoundException {
-        return Class.forName(tClass.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
+    /**
+     * Retrieve instance of {@link TypeAdapter} for serialization and deserialization.
+     *
+     * @param clazz Type which has a {@link TypeAdapter}.
+     *
+     * @return instance of {@link TypeAdapter} will throw an
+     * {@link IllegalArgumentException} if there's no {@link TypeAdapter} found.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> TypeAdapter<T> getTypeAdapter(Class<T> clazz) {
+        TypeAdapter<T> adapter = null;
+        try{
+            Class adapters = Class.forName(BoxerProcessor.ADAPTER_PACKAGE_NAME + "." + BoxerProcessor.ADAPTER_CLASS_NAME);
+            Method method = adapters.getMethod(BoxerProcessor.ADAPTER_METHOD_GET, Class.class);
+            adapter = (TypeAdapter<T>) method.invoke(null, clazz);
+        } catch (Exception ignored){}
+
+        if(adapter == null){
+            throw new IllegalArgumentException(
+                    String.format("No TypeAdapter found for the class %s", clazz.getCanonicalName()));
+        }
+        return adapter;
     }
 
-    /*
-        Add methods
+    /**
+     * Returns a Class object of {@link com.larswerkman.boxer.annotations.Box}
+     * class of a {@link Boxable} class.
+     *
+     * @param clazz {@link Boxable} class.
+     *
+     * @return {@link Class} for the {@link com.larswerkman.boxer.annotations.Box} class of a {@link Boxable}.
      */
+    private static <T extends Boxable> Class<?> boxableClass(Class<T> clazz) throws ClassNotFoundException {
+        return Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
+    }
+
+    /**************************
+        Abstract Add methods
+     **************************/
+
+    /**
+     * Insert an Object value into the mapping of the Boxer,
+     * replacing any existing value for the given key.
+     *
+     * Will throw an {@link IllegalArgumentException} if there's no {@link TypeAdapter}
+     * for the value Class.
+     *
+     * @param key an unique identifier
+     * @param value a Object which has an {@link TypeAdapter}, or null.
+     */
+    public abstract void add(String key, Object value);
+
+    /**
+     * Insert an Object array value into the mapping of the Boxer,
+     * replacing any existing value for the given key.
+     *
+     * Will throw an {@link IllegalArgumentException} if there's no {@link TypeAdapter}
+     * for the value Class.
+     *
+     * @param key an unique identifier
+     * @param value a Object array which has an {@link TypeAdapter}, or null.
+     */
+    public abstract void addArray(String key, Object[] value);
+
+    /**
+     * Insert an Object List value into the mapping of the Boxer,
+     * replacing any existing value for the given key.
+     *
+     * Will throw an {@link IllegalArgumentException} if there's no {@link TypeAdapter}
+     * for the value Class.
+     *
+     * @param key an unique identifier
+     * @param value a List array which has an {@link TypeAdapter}, or null.
+     */
+    public abstract void addList(String key, List<?> value);
 
     /**
      * Inserts a Boxable value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Boxable object, or null
      * @param <T> should extend a Boxable
      */
     public abstract <T extends Boxable> void addBoxable(String key, T value);
 
     /**
-     * Inserts a Boxable List value into the mapping of the Boxer,
-     * replacing any existing value for the given key.
-     *
-     * @param key a String
-     * @param value a Boxable List object, or null
-     * @param <T> should implement a Boxable interface
-     */
-    public abstract <T extends Boxable> void addBoxableList(String key, List<T> value);
-
-    /**
      * Inserts a Boxable array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Boxable array object, or null
      * @param <T> should implement a Boxable interface
      */
     public abstract <T extends Boxable> void addBoxableArray(String key, T[] value);
 
     /**
+     * Inserts a Boxable List value into the mapping of the Boxer,
+     * replacing any existing value for the given key.
+     *
+     * @param key an unique identifier
+     * @param value a Boxable List object, or null
+     * @param <T> should implement a Boxable interface
+     */
+    public abstract <T extends Boxable> void addBoxableList(String key, List<T> value);
+
+    /**
      * Inserts an Enum value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value an Enum object, or null
      */
     public abstract void addEnum(String key, Enum value);
@@ -297,7 +357,7 @@ public abstract class Boxer {
      * Inserts an Enum array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value an Enum array object, or null
      */
     public abstract void addEnumArray(String key, Enum[] value);
@@ -306,7 +366,7 @@ public abstract class Boxer {
      * Inserts an Enum List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value an Enum List object, or null
      */
     public abstract void addEnumList(String key, List<? extends Enum> value);
@@ -315,7 +375,7 @@ public abstract class Boxer {
      * Inserts an String value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value an String object, or null
      */
     public abstract void addString(String key, String value);
@@ -324,7 +384,7 @@ public abstract class Boxer {
      * Inserts a String array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a String array object, or null
      */
     public abstract void addStringArray(String key, String[] value);
@@ -333,7 +393,7 @@ public abstract class Boxer {
      * Inserts a String List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a String List object, or null
      */
     public abstract void addStringList(String key, List<String> value);
@@ -342,7 +402,7 @@ public abstract class Boxer {
      * Inserts a Boolean value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Boolean, or null
      */
     public abstract void addBoolean(String key, boolean value);
@@ -351,7 +411,7 @@ public abstract class Boxer {
      * Inserts a Boolean array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Boolean array object, or null
      */
     public abstract void addBooleanArray(String key, boolean[] value);
@@ -360,7 +420,7 @@ public abstract class Boxer {
      * Inserts a Boolean List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Boolean List object, or null
      */
     public abstract void addBooleanList(String key, List<Boolean> value);
@@ -369,7 +429,7 @@ public abstract class Boxer {
      * Inserts a Byte value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Byte, or null
      */
     public abstract void addByte(String key, byte value);
@@ -378,7 +438,7 @@ public abstract class Boxer {
      * Inserts a Byte array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Byte array object, or null
      */
     public abstract void addByteArray(String key, byte[] value);
@@ -387,7 +447,7 @@ public abstract class Boxer {
      * Inserts a Byte List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Byte List object, or null
      */
     public abstract void addByteList(String key, List<Byte> value);
@@ -396,7 +456,7 @@ public abstract class Boxer {
      * Inserts a Character value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Character, or null
      */
     public abstract void addChar(String key, char value);
@@ -405,7 +465,7 @@ public abstract class Boxer {
      * Inserts a Character array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Character array object, or null
      */
     public abstract void addCharArray(String key, char[] value);
@@ -414,7 +474,7 @@ public abstract class Boxer {
      * Inserts a Character List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Character List object, or null
      */
     public abstract void addCharList(String key, List<Character> value);
@@ -423,7 +483,7 @@ public abstract class Boxer {
      * Inserts a Short value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Short, or null
      */
     public abstract void addShort(String key, short value);
@@ -432,7 +492,7 @@ public abstract class Boxer {
      * Inserts a Short array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Short array object, or null
      */
     public abstract void addShortArray(String key, short[] value);
@@ -441,7 +501,7 @@ public abstract class Boxer {
      * Inserts a Short List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Short List object, or null
      */
     public abstract void addShortList(String key, List<Short> value);
@@ -450,7 +510,7 @@ public abstract class Boxer {
      * Inserts an Integer value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value an Integer, or null
      */
     public abstract void addInt(String key, int value);
@@ -459,7 +519,7 @@ public abstract class Boxer {
      * Inserts an Integer array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value an Integer array object, or null
      */
     public abstract void addIntArray(String key, int[] value);
@@ -468,7 +528,7 @@ public abstract class Boxer {
      * Inserts an Integer List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value an Integer List object, or null
      */
     public abstract void addIntList(String key, List<Integer> value);
@@ -477,7 +537,7 @@ public abstract class Boxer {
      * Inserts a Long value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Long, or null
      */
     public abstract void addLong(String key, long value);
@@ -486,7 +546,7 @@ public abstract class Boxer {
      * Inserts a Long array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Long array object, or null
      */
     public abstract void addLongArray(String key, long[] value);
@@ -495,7 +555,7 @@ public abstract class Boxer {
      * Inserts a Long List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Long List object, or null
      */
     public abstract void addLongList(String key, List<Long> value);
@@ -504,7 +564,7 @@ public abstract class Boxer {
      * Inserts a Double value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Double, or null
      */
     public abstract void addDouble(String key, double value);
@@ -513,7 +573,7 @@ public abstract class Boxer {
      * Inserts a Double array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Double array object, or null
      */
     public abstract void addDoubleArray(String key, double[] value);
@@ -522,7 +582,7 @@ public abstract class Boxer {
      * Inserts a Double List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Double List object, or null
      */
     public abstract void addDoubleList(String key, List<Double> value);
@@ -531,7 +591,7 @@ public abstract class Boxer {
      * Inserts a Float value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Float, or null
      */
     public abstract void addFloat(String key, float value);
@@ -540,7 +600,7 @@ public abstract class Boxer {
      * Inserts a Float array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Float array object, or null
      */
     public abstract void addFloatArray(String key, float[] value);
@@ -549,14 +609,48 @@ public abstract class Boxer {
      * Inserts a Float List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param value a Float List object, or null
      */
     public abstract void addFloatList(String key, List<Float> value);
 
-    /*
-        Get methods
+    /**************************
+        Abstract Get methods
+     **************************/
+
+    /**
+     * Returns an object of the given type associated with the given key,
+     * or null if no mapping of the desired type exists for the given key.
+     *
+     * @param key an unique identifier
+     * @param clazz type to retrieve
+     *
+     * @return an instance of given type, or null
      */
+    public abstract <T> T get(String key, Class<T> clazz);
+
+    /**
+     * Returns an array of objects of the given type associated with the given key,
+     * or null if no mapping of the desired type exists for the given key.
+     *
+     * @param key an unique identifier
+     * @param clazz type to retrieve
+     *
+     * @return an array instance of the given type, or null
+     */
+    public abstract <T> T[] getArray(String key, Class<T> clazz);
+
+    /**
+     * Retruns a list of objects of the given type associated wit the given key,
+     * or null if no mapping of the desired type exists for the given key.
+     *
+     * @param key an unique identifier
+     * @param clazz type to retrieve
+     * @param listtype instance of list type to store in
+     *
+     * @return an list instance filled with instance of the given type, or null.
+     */
+    public abstract <T, E extends List<T>> E getList(String key, Class<T> clazz, Class<E> listtype);
 
     /**
      * Returns the value associated with the given key, or null if
@@ -564,7 +658,7 @@ public abstract class Boxer {
      * value is explicitly associated with the key.
      *
      * @param <T> should implement a Boxable interface
-     * @param key a String
+     * @param key an unique identifier
      * @param clazz type of Boxable expected class
      * @return a Boxable value, or null
      */
@@ -575,7 +669,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param clazz type of Boxable expected class
      * @param <T> should implement a Boxable interface
      * @return a Boxable[] value, or null
@@ -587,7 +681,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param clazz type of Boxable expected class
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> should implement a Boxable interface
@@ -601,7 +695,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param clazz type of Enum expected class
      * @param <T> should extend the Enum class
      * @return an Enum value, or null
@@ -613,7 +707,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param clazz type of Enum expected class
      * @param <T> should extend the Enum class
      * @return an Enum[] value, or null
@@ -627,7 +721,7 @@ public abstract class Boxer {
      *
      * @param <T> should extend the Enum class
      * @param <E> Type of the List that will be instantiated
-     * @param key a String
+     * @param key an unique identifier
      * @param clazz type of Enum expected class
      * @param listtype type of expected List, should have a no-args constructor.
      * @return an List value, or null
@@ -639,7 +733,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a String value, or null
      */
     public abstract String getString(String key);
@@ -649,7 +743,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a String[] value, or null
      */
     public abstract String[] getStringArray(String key);
@@ -659,7 +753,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -671,7 +765,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Boolean value, or null
      */
     public abstract boolean getBoolean(String key);
@@ -681,7 +775,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Boolean value, or null
      */
     public abstract boolean[] getBooleanArray(String key);
@@ -691,7 +785,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -703,7 +797,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Byte value, or null
      */
     public abstract byte getByte(String key);
@@ -713,7 +807,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Byte[] value, or null
      */
     public abstract byte[] getByteArray(String key);
@@ -723,7 +817,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -735,7 +829,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Character value, or null
      */
     public abstract char getChar(String key);
@@ -745,7 +839,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Character[] value, or null
      */
     public abstract char[] getCharArray(String key);
@@ -755,7 +849,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -767,7 +861,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Short value, or null
      */
     public abstract short getShort(String key);
@@ -777,7 +871,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Short[] value, or null
      */
     public abstract short[] getShortArray(String key);
@@ -787,7 +881,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -799,7 +893,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return an Integer value, or null
      */
     public abstract int getInt(String key);
@@ -809,7 +903,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return an Integer[] value, or null
      */
     public abstract int[] getIntArray(String key);
@@ -819,7 +913,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -831,7 +925,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Long value, or null
      */
     public abstract long getLong(String key);
@@ -841,7 +935,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Long[] value, or null
      */
     public abstract long[] getLongArray(String key);
@@ -851,7 +945,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -863,7 +957,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Double value, or null
      */
     public abstract double getDouble(String key);
@@ -873,7 +967,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Double[] value, or null
      */
     public abstract double[] getDoubleArray(String key);
@@ -883,7 +977,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null
@@ -895,7 +989,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Float value, or null
      */
     public abstract float getFloat(String key);
@@ -905,7 +999,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @return a Float[] value, or null
      */
     public abstract float[] getFloatArray(String key);
@@ -915,7 +1009,7 @@ public abstract class Boxer {
      * no mapping of the desired type exists for the given key or a null
      * value is explicitly associated with the key.
      *
-     * @param key a String
+     * @param key an unique identifier
      * @param listtype type of expected List, should have a no-args constructor.
      * @param <T> Type of the List that will be instantiated
      * @return a List value, or null

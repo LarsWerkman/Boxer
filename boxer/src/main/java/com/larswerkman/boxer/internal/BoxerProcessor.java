@@ -15,10 +15,13 @@
  */
 package com.larswerkman.boxer.internal;
 
+import com.larswerkman.boxer.annotations.Adapter;
 import com.larswerkman.boxer.annotations.Box;
 import com.larswerkman.boxer.annotations.Wrap;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -29,17 +32,22 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.List;
 
 /**
  * Annotation Processor for processing the {@link com.larswerkman.boxer.annotations.Box} annotation
  */
-@SupportedAnnotationTypes("com.larswerkman.boxer.annotations.Box")
+@SupportedAnnotationTypes({
+        "com.larswerkman.boxer.annotations.Box",
+        "com.larswerkman.boxer.annotations.Adapter"
+})
 public class BoxerProcessor extends AbstractProcessor {
 
     public static final String ADAPTER_PACKAGE_NAME = "com.larswerkman.boxer";
     public static final String ADAPTER_CLASS_NAME = "Adapters$Box";
+    public static final String ADAPTER_METHOD_GET = "get";
 
     public static final String CLASS_EXTENSION = "$Boxer";
     public static final String METHOD_SERIALIZE = "serialize";
@@ -49,6 +57,9 @@ public class BoxerProcessor extends AbstractProcessor {
     private static TypeMirror TYPE_STRING;
     private static TypeMirror TYPE_LIST;
     private static TypeMirror TYPE_OBJECT;
+    private static TypeMirror TYPE_ADAPTER;
+
+    private List<AdapterBinding> adapters = new ArrayList<AdapterBinding>();
 
     private Elements elementUtils;
     private Types typeUtils;
@@ -70,12 +81,32 @@ public class BoxerProcessor extends AbstractProcessor {
         TYPE_LIST = typeUtils.getDeclaredType(
                 elementUtils.getTypeElement("java.util.List"),
                 typeUtils.getWildcardType(TYPE_OBJECT, null));
+        TYPE_ADAPTER = elementUtils.getTypeElement("com.larswerkman.boxer.TypeAdapter").asType();
 
         Set<? extends Element> boxableElements = env.getElementsAnnotatedWith(Box.class);
+        Set<? extends Element> adapterElements = env.getElementsAnnotatedWith(Adapter.class);
+
+        //Process all adapters classes
+        if(!adapterElements.isEmpty()) {
+            adapters.addAll(parseTypeAdapters(adapterElements));
+            JavaFile adaptersClass = JavaFile.builder(ADAPTER_PACKAGE_NAME,
+                    new AdaptersClass(adapters).build()).build();
+            try {
+                adaptersClass.writeTo(filer);
+            } catch (IOException e) {
+                log.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
+            }
+        }
 
         //Process all boxable classes
         for (Element element : boxableElements) {
             TypeElement typeElement = (TypeElement) element;
+
+            if(!hasEmptyConstructor(typeElement)){
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("%s class must contain a non-args constructor",
+                                typeElement.getSimpleName()), typeElement);
+            }
 
             List<FieldBinding> bindings = parseBoxableFields(typeElement);
             BoxClass boxClass = new BoxClass(element.getSimpleName().toString() + CLASS_EXTENSION,
@@ -90,6 +121,35 @@ public class BoxerProcessor extends AbstractProcessor {
         }
 
         return true;
+    }
+
+    private List<AdapterBinding> parseTypeAdapters(Set<? extends Element> elements){
+        List<AdapterBinding> adapters = new ArrayList<AdapterBinding>();
+        for(Element element : elements){
+            TypeElement typeElement = (TypeElement) element;
+            TypeMirror superType = typeElement.getSuperclass();
+
+            if(!hasEmptyConstructor(typeElement)){
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("%s class must contain a non-args constructor",
+                                typeElement.getSimpleName()), typeElement);
+            }
+
+            //Check for superclass without A WildcardType
+            Element superElement = typeUtils.asElement(superType);
+            if(typeUtils.isSameType(superElement.asType(), TYPE_ADAPTER)){
+
+                //Returns first TypeArgument which will be the target class.
+                TypeMirror targetType = ((DeclaredType) superType).getTypeArguments().get(0);
+
+                adapters.add(new AdapterBinding(typeElement.asType(), targetType));
+            } else {
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("%s class must extend TypeAdapter class",
+                                typeElement.getSimpleName()), typeElement);
+            }
+        }
+        return adapters;
     }
 
     private List<FieldBinding> parseBoxableFields(TypeElement typeElement){
@@ -132,7 +192,7 @@ public class BoxerProcessor extends AbstractProcessor {
 
             if(!isAcceptable(getType(field.asType()))){
                 log.printMessage(Diagnostic.Kind.ERROR,
-                        String.format("%s field can't be of type %s and should implement a boxable interface",
+                        String.format("%s field can't be of type %s",
                                 field.getSimpleName().toString(), field.asType().toString()));
             }
 
@@ -140,19 +200,20 @@ public class BoxerProcessor extends AbstractProcessor {
             String methodType = getMethodType(getType(field.asType()));
             if(isArray(field.asType())){
                 bindings.add(new ArrayFieldBinding(field.getSimpleName().toString(),
-                        methodType, getStoreType(getType(field.asType())), isPrivate));
+                        getStoreType(getType(field.asType())), methodType , isPrivate));
             } else if(isList(field.asType())){
                 //Get the type of the list. if it has a Wrap annotation override it.
-                String listType = getListType(field.asType(), getType(field.asType()));
-                if(wrapType != null){
-                    listType = wrapType.toString();
+                TypeMirror listType = getListType(field.asType(), getType(field.asType()));
+                if(wrapType != null) {
+                    listType = wrapType;
                 }
+                ClassName listTypeName = ClassName.get((TypeElement) ((DeclaredType) listType).asElement());
 
                 bindings.add(new ListFieldBinding(field.getSimpleName().toString(),
-                        methodType, getStoreType(getType(field.asType())), listType, isPrivate));
+                        getStoreType(getType(field.asType())), methodType, listTypeName, isPrivate));
             } else {
                 bindings.add(new FieldBinding(field.getSimpleName().toString(),
-                        methodType, getStoreType(getType(field.asType())), isPrivate));
+                        getStoreType(getType(field.asType())), methodType, isPrivate));
             }
         }
         return bindings;
@@ -209,17 +270,21 @@ public class BoxerProcessor extends AbstractProcessor {
             return "Boxable";
         } else if(isEnum(type)) {
             return "Enum";
+        } else if(isAdapter(type)){
+            return "";
         }
 
         //Its a primitive or wrapper and we should unbox it.
         return unboxed(type);
     }
 
-    private String getStoreType(TypeMirror type){
+    private TypeMirror getStoreType(TypeMirror type){
         if(isBoxable(type)){
-            return type.toString();
+            return type;
         } else if(isEnum(type)){
-            return type.toString();
+            return type;
+        } else if(isAdapter(type)){
+            return type;
         }
         return null;
     }
@@ -228,7 +293,31 @@ public class BoxerProcessor extends AbstractProcessor {
         return (isPrimitiveOrWrapper(type)
                 || isString(type)
                 || isBoxable(type)
-                || isEnum(type));
+                || isEnum(type)
+                || isAdapter(type));
+    }
+
+    private boolean isAdapter(TypeMirror type){
+        for(AdapterBinding adapter : adapters){
+            if(typeUtils.isSameType(type, adapter.getType())){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasEmptyConstructor(TypeElement element){
+        List<ExecutableElement> constructors = ElementFilter
+                .constructorsIn(element.getEnclosedElements());
+        if(constructors.isEmpty()){
+            return true;
+        }
+        for(ExecutableElement constructor : constructors){
+            if(constructor.getParameters().isEmpty()){
+                return true;
+            }
+        }
+        return false;
     }
 
     private String unboxed(TypeMirror type) {
@@ -281,15 +370,15 @@ public class BoxerProcessor extends AbstractProcessor {
         return type;
     }
 
-    private String getListType(TypeMirror type, TypeMirror arrayType){
+    private TypeMirror getListType(TypeMirror type, TypeMirror arrayType){
         TypeMirror declaredListType = typeUtils.getDeclaredType(
                 elementUtils.getTypeElement("java.util.List"), arrayType);
 
         //Check if the list type is the abstract List and make it an default ArrayList
         if (typeUtils.isSameType(declaredListType, type)) {
-            return "java.util.ArrayList";
+            return elementUtils.getTypeElement("java.util.ArrayList").asType();
         }
-        return ((DeclaredType) type).asElement().toString();
+        return type;
     }
 
     private String getPackage(TypeElement type) {

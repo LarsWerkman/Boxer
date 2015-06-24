@@ -10,7 +10,7 @@ import com.larswerkman.boxer.Boxer;
 public class BundleWrapperTest extends AbstractWrapperTest {
 
     @Override
-    public Boxer getBoxer() {
+    public Boxer<?> getBoxer() {
         return new BundleWrapper(new Bundle());
     }
 }

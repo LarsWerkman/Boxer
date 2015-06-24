@@ -31,33 +31,51 @@ import java.util.List;
  * ParcelWrapper should only be used when you don't
  * change the order you read and write to it.
  */
-public class ParcelWrapper extends Boxer {
+public class ParcelWrapper extends Boxer<Parcel> {
 
     Parcel parcel;
 
-    public ParcelWrapper(Object object){
+    public ParcelWrapper(Parcel object){
         super(object);
-        parcel = (Parcel) object;
+        parcel = object;
+    }
+
+    @Override
+    public void add(String key, Object value) {
+        this.parcel.writeBundle(serialize(new BundleWrapper(new Bundle()), value));
+    }
+
+    @Override
+    public void addArray(String key, Object[] value) {
+        this.parcel.writeInt(value.length);
+        for(Object boxable : value) {
+            this.parcel.writeBundle(serialize(new BundleWrapper(new Bundle()), boxable));
+        }
+    }
+
+    @Override
+    public void addList(String key, List<?> value) {
+        addArray(key, value.toArray());
     }
 
     @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
-        this.parcel.writeBundle(storeBoxable(BundleWrapper.class, value, new Bundle()));
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
-        this.parcel.writeInt(value.size());
-        for(T boxable : value) {
-            this.parcel.writeBundle(storeBoxable(BundleWrapper.class, boxable, new Bundle()));
-        }
+        this.parcel.writeBundle(serializeBoxable(new BundleWrapper(new Bundle()), value));
     }
 
     @Override
     public <T extends Boxable> void addBoxableArray(String key, T[] value) {
         this.parcel.writeInt(value.length);
         for(T boxable : value) {
-            this.parcel.writeBundle(storeBoxable(BundleWrapper.class, boxable, new Bundle()));
+            this.parcel.writeBundle(serializeBoxable(new BundleWrapper(new Bundle()), boxable));
+        }
+    }
+
+    @Override
+    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
+        this.parcel.writeInt(value.size());
+        for(T boxable : value) {
+            this.parcel.writeBundle(serializeBoxable(new BundleWrapper(new Bundle()), boxable));
         }
     }
 
@@ -256,13 +274,54 @@ public class ParcelWrapper extends Boxer {
     }
 
     @Override
+    public <T> T get(String key, Class<T> clazz) {
+        Bundle bundle = this.parcel.readBundle();
+        if(bundle == null || bundle.isEmpty()){
+            return null;
+        }
+
+        return deserialize(new BundleWrapper(bundle), clazz);
+    }
+
+    @Override
+    public <T> T[] getArray(String key, Class<T> clazz) {
+        int size = this.parcel.readInt();
+        if(size == 0){
+            return null;
+        }
+
+        T[] boxables = (T[]) Array.newInstance(clazz, size);
+        for(int i = 0; i < size; i++){
+            boxables[i] = deserialize(new BundleWrapper(this.parcel.readBundle()), clazz);
+        }
+        return boxables;
+    }
+
+    @Override
+    public <T, E extends List<T>> E getList(String key, Class<T> clazz, Class<E> listtype) {
+        int size = this.parcel.readInt();
+        if(size == 0){
+            return null;
+        }
+
+        E boxables = null;
+        try {
+            boxables = listtype.newInstance();
+            for (int i = 0; i < size; i++) {
+                boxables.add(deserialize(new BundleWrapper(this.parcel.readBundle()), clazz));
+            }
+        } catch (Exception e){};
+        return boxables;
+    }
+
+    @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
         Bundle bundle = this.parcel.readBundle();
         if(bundle.isEmpty()){
             return null;
         }
 
-        return retrieveBoxable(BundleWrapper.class, clazz, bundle);
+        return deserializeBoxable(new BundleWrapper(bundle), clazz);
     }
 
     @Override
@@ -274,7 +333,7 @@ public class ParcelWrapper extends Boxer {
 
         T[] boxables = (T[]) Array.newInstance(clazz, size);
         for(int i = 0; i < size; i++){
-            boxables[i] = retrieveBoxable(BundleWrapper.class, clazz, this.parcel.readBundle());
+            boxables[i] = deserializeBoxable(new BundleWrapper(this.parcel.readBundle()), clazz);
         }
         return boxables;
     }
@@ -290,7 +349,7 @@ public class ParcelWrapper extends Boxer {
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < size; i++) {
-                boxables.add(retrieveBoxable(BundleWrapper.class, clazz, this.parcel.readBundle()));
+                boxables.add(deserializeBoxable(new BundleWrapper(this.parcel.readBundle()), clazz));
             }
         } catch (Exception e){};
         return boxables;

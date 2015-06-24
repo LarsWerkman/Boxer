@@ -34,7 +34,7 @@ public class SQLiteWrapperTest extends AbstractWrapperTest {
     private SQLiteDatabase database = helper.getReadableDatabase();
 
     @Override
-    public Boxer getBoxer() {
+    public Boxer<?> getBoxer() {
         return new SQLiteWrapper(database);
     }
 }

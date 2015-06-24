@@ -15,7 +15,7 @@ import java.util.List;
  *
  * Created by lars on 24-04-15.
  */
-public class SQLiteWrapper extends Boxer {
+public class SQLiteWrapper extends Boxer<SQLiteDatabase> {
 
     private static final String COLUMN_KEY = "key";
     private static final String COLUMN_VALUE = "value";
@@ -37,9 +37,9 @@ public class SQLiteWrapper extends Boxer {
     private String identifier = "";
     private SQLiteDatabase database;
 
-    public SQLiteWrapper(Object object) {
-        super(object);
-        database = (SQLiteDatabase) object;
+    public SQLiteWrapper(SQLiteDatabase database) {
+        super(database);
+        this.database = database;
 
         createTable(TABLE_STRING, "TEXT");
         createArrayTable(TABLE_STRING_ARRAY, "TEXT");
@@ -52,8 +52,8 @@ public class SQLiteWrapper extends Boxer {
         createTable(TABLE_BOXABLE, "INTEGER");
     }
 
-    private SQLiteWrapper(Object object, String identifier){
-        this(object);
+    private SQLiteWrapper(SQLiteDatabase database, String identifier){
+        this(database);
         this.identifier = identifier;
     }
 
@@ -89,12 +89,37 @@ public class SQLiteWrapper extends Boxer {
     }
 
     @Override
+    public void add(String key, Object value) {
+        ContentValues content = new ContentValues();
+        content.put(COLUMN_VALUE, 1);
+        addKeyValue(getIdentifier(key), content, TABLE_BOXABLE);
+
+        serialize(new SQLiteWrapper(database, getIdentifier(key)), value);
+    }
+
+    @Override
+    public void addArray(String key, Object[] value) {
+        ContentValues content = new ContentValues();
+        content.put(COLUMN_VALUE, value.length);
+        addKeyValue(getIdentifier(key), content, TABLE_ARRAY_SIZE);
+
+        for(int i = 0; i < value.length; i++){
+            serialize(new SQLiteWrapper(database, getIdentifier(key, i)), value[i]);
+        }
+    }
+
+    @Override
+    public void addList(String key, List<?> value) {
+        addArray(key, value.toArray());
+    }
+
+    @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
         ContentValues content = new ContentValues();
         content.put(COLUMN_VALUE, 1);
         addKeyValue(getIdentifier(key), content, TABLE_BOXABLE);
 
-        storeBoxable(new SQLiteWrapper(database, getIdentifier(key)), value);
+        serializeBoxable(new SQLiteWrapper(database, getIdentifier(key)), value);
     }
 
     @Override
@@ -104,7 +129,7 @@ public class SQLiteWrapper extends Boxer {
         addKeyValue(getIdentifier(key), content, TABLE_ARRAY_SIZE);
 
         for(int i = 0; i < value.length; i++){
-            storeBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), value[i]);
+            serializeBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), value[i]);
         }
     }
 
@@ -398,13 +423,58 @@ public class SQLiteWrapper extends Boxer {
     }
 
     @Override
+    public <T> T get(String key, Class<T> clazz) {
+        Cursor cursor = getKeyValue(getIdentifier(key), TABLE_BOXABLE);
+        if(cursor == null || cursor.getCount() == 0){
+            return null;
+        }
+
+        return deserialize(new SQLiteWrapper(database, getIdentifier(key)), clazz);
+    }
+
+    @Override
+    public <T> T[] getArray(String key, Class<T> clazz) {
+        Cursor cursor = getKeyValue(getIdentifier(key), TABLE_ARRAY_SIZE);
+        if(cursor == null || cursor.getCount() == 0){
+            return null;
+        }
+        cursor.moveToFirst();
+        int size = cursor.getInt(1);
+
+        T[] boxables = (T[]) Array.newInstance(clazz, size);
+        for(int i = 0; i < size; i++){
+            boxables[i] = deserialize(new SQLiteWrapper(database, getIdentifier(key, i)), clazz);
+        }
+        return boxables;
+    }
+
+    @Override
+    public <T, E extends List<T>> E getList(String key, Class<T> clazz, Class<E> listtype) {
+        Cursor cursor = getKeyValue(getIdentifier(key), TABLE_ARRAY_SIZE);
+        if(cursor == null || cursor.getCount() == 0){
+            return null;
+        }
+        cursor.moveToFirst();
+        int size = cursor.getInt(1);
+
+        E boxables = null;
+        try {
+            boxables = listtype.newInstance();
+            for (int i = 0; i < size; i++) {
+                boxables.add(deserialize(new SQLiteWrapper(database, getIdentifier(key, i)), clazz));
+            }
+        } catch (Exception e){};
+        return boxables;
+    }
+
+    @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
         Cursor cursor = getKeyValue(getIdentifier(key), TABLE_BOXABLE);
         if(cursor == null || cursor.getCount() == 0){
             return null;
         }
 
-        return retrieveBoxable(new SQLiteWrapper(database, getIdentifier(key)), clazz);
+        return deserializeBoxable(new SQLiteWrapper(database, getIdentifier(key)), clazz);
     }
 
     @Override
@@ -418,7 +488,7 @@ public class SQLiteWrapper extends Boxer {
 
         T[] boxables = (T[]) Array.newInstance(clazz, size);
         for(int i = 0; i < size; i++){
-            boxables[i] = retrieveBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), clazz);
+            boxables[i] = deserializeBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), clazz);
         }
         return boxables;
     }
@@ -436,7 +506,7 @@ public class SQLiteWrapper extends Boxer {
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < size; i++) {
-                boxables.add(retrieveBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), clazz));
+                boxables.add(deserializeBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), clazz));
             }
         } catch (Exception e){};
         return boxables;

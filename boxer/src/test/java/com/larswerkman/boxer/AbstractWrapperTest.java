@@ -1,5 +1,6 @@
 package com.larswerkman.boxer;
 
+import android.os.Bundle;
 import com.google.common.primitives.*;
 import com.larswerkman.boxer.boxables.*;
 import com.larswerkman.boxer.enums.PrimaryEnum;
@@ -18,9 +19,12 @@ import java.util.*;
 @Config(manifest = Config.NONE)
 public abstract class AbstractWrapperTest {
 
-    public Boxer boxer;
+    public Boxer<?> boxer;
 
     private static final String KEY = "key";
+
+    private static final Date DATE_ADAPTER = new Date();
+    private static final Date[] DATE_ADAPTER_ARRAY = {new Date(), new Date()};
 
     private static final PrimaryBoxable BOXABLE = new PrimaryBoxable().setup();
     private static final PrimaryBoxable[] BOXABLE_ARRAY = {new PrimaryBoxable().setup(), new PrimaryBoxable().setup()};
@@ -64,7 +68,7 @@ public abstract class AbstractWrapperTest {
     private static final ObjectBoxable OBJECT_BOXABLE = new ObjectBoxable().setup();
     private static final EnumBoxable ENUM_BOXABLE = new EnumBoxable().setup();
 
-    public abstract Boxer getBoxer();
+    public abstract Boxer<?> getBoxer();
 
     @Before
     public void setup() {
@@ -83,6 +87,39 @@ public abstract class AbstractWrapperTest {
 
     public void between() {
         //Empty implementation
+    }
+
+    @Test
+    public void adapter(){
+        Assertions.assertThat(boxer.get(KEY, Date.class))
+                .isNull();
+        between();
+        boxer.add(KEY, DATE_ADAPTER);
+        between();
+        Assertions.assertThat(boxer.get(KEY, Date.class))
+                .isEqualTo(DATE_ADAPTER);
+    }
+
+    @Test
+    public void adapterArray(){
+        Assertions.assertThat(boxer.getArray(KEY, Date.class))
+                .isNull();
+        between();
+        boxer.addArray(KEY, DATE_ADAPTER_ARRAY);
+        between();
+        Assertions.assertThat(boxer.getArray(KEY, Date.class))
+                .isEqualTo(DATE_ADAPTER_ARRAY);
+    }
+
+    @Test
+    public void adapterList(){
+        Assertions.assertThat(boxer.getList(KEY, Date.class, ArrayList.class))
+                .isNull();
+        between();
+        boxer.addList(KEY, Arrays.asList(DATE_ADAPTER_ARRAY));
+        between();
+        Assertions.assertThat(boxer.getList(KEY, Date.class, ArrayList.class))
+                .isEqualTo(Arrays.asList(DATE_ADAPTER_ARRAY));
     }
 
     @Test

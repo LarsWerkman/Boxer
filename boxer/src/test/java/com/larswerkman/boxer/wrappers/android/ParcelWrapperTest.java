@@ -12,7 +12,7 @@ public class ParcelWrapperTest extends AbstractWrapperTest {
     private Parcel parcel;
 
     @Override
-    public Boxer getBoxer() {
+    public Boxer<?> getBoxer() {
         return new ParcelWrapper(parcel = Parcel.obtain());
     }
 

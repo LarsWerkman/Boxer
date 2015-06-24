@@ -11,7 +11,7 @@ import java.util.HashMap;
 public class TestWrapperTest extends AbstractWrapperTest {
 
     @Override
-    public Boxer getBoxer() {
+    public Boxer<?> getBoxer() {
         return new TestWrapper(new HashMap<String, Object>());
     }
 }

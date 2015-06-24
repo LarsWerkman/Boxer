@@ -33,6 +33,12 @@ public class BoxerTest {
     }
 
     @Test
+    public void failObtainWrapper(){
+        Assertions.assertThat(Boxer.from(null))
+                .isNull();
+    }
+
+    @Test
     public void obtainDefaultWrappers(){
         Assertions.assertThat(Boxer.from(new Bundle()))
                 .isOfAnyClassIn(BundleWrapper.class).isNotNull();

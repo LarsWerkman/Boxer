@@ -27,34 +27,53 @@ import java.util.List;
 /**
  * DataMapWrapper defines how the Boxer class should write to a {@link com.google.android.gms.wearable.DataMap}
  */
-public class DataMapWrapper extends Boxer {
+public class DataMapWrapper extends Boxer<DataMap> {
 
     private DataMap dataMap;
 
-    public DataMapWrapper(Object object) {
+    public DataMapWrapper(DataMap object) {
         super(object);
-        this.dataMap = (DataMap) object;
+        this.dataMap = object;
+    }
+
+    @Override
+    public void add(String key, Object value) {
+        this.dataMap.putDataMap(key, serialize(new DataMapWrapper(new DataMap()), value));
+    }
+
+    @Override
+    public void addArray(String key, Object[] value) {
+        ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
+        for(Object box : value){
+            dataMaps.add(serialize(new DataMapWrapper(new DataMap()), box));
+        }
+        this.dataMap.putDataMapArrayList(key, dataMaps);
+    }
+
+    @Override
+    public void addList(String key, List<?> value) {
+        addArray(key, value.toArray());
     }
 
     @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
-        this.dataMap.putDataMap(key, storeBoxable(getClass(), value, new DataMap()));
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
-        ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
-        for(T box : value){
-            dataMaps.add(storeBoxable(getClass(), box, new DataMap()));
-        }
-        this.dataMap.putDataMapArrayList(key, dataMaps);
+        this.dataMap.putDataMap(key, serializeBoxable(new DataMapWrapper(new DataMap()), value));
     }
 
     @Override
     public <T extends Boxable> void addBoxableArray(String key, T[] value) {
         ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
         for(T box : value){
-            dataMaps.add(storeBoxable(getClass(), box, new DataMap()));
+            dataMaps.add(serializeBoxable(new DataMapWrapper(new DataMap()), box));
+        }
+        this.dataMap.putDataMapArrayList(key, dataMaps);
+    }
+
+    @Override
+    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
+        ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
+        for(T box : value){
+            dataMaps.add(serializeBoxable(new DataMapWrapper(new DataMap()), box));
         }
         this.dataMap.putDataMapArrayList(key, dataMaps);
     }
@@ -267,8 +286,48 @@ public class DataMapWrapper extends Boxer {
     }
 
     @Override
+    public <T> T get(String key, Class<T> clazz) {
+        DataMap dataMap = this.dataMap.getDataMap(key);
+        if(dataMap == null){
+            return null;
+        }
+        return deserialize(new DataMapWrapper(dataMap), clazz);
+    }
+
+    @Override
+    public <T> T[] getArray(String key, Class<T> clazz) {
+        ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
+        if(dataMaps == null){
+            return null;
+        }
+
+        T[] objects = (T[]) Array.newInstance(clazz, dataMaps.size());
+        for(int i = 0; i < dataMaps.size(); i++){
+            objects[i] = deserialize(new DataMapWrapper(dataMaps.get(i)), clazz);
+        }
+        return objects;
+    }
+
+    @Override
+    public <T, E extends List<T>> E getList(String key, Class<T> clazz, Class<E> listtype) {
+        ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
+        if(dataMaps == null){
+            return null;
+        }
+
+        E objects = null;
+        try {
+            objects = listtype.newInstance();
+            for (DataMap dataMap : dataMaps) {
+                objects.add(deserialize(new DataMapWrapper(dataMap), clazz));
+            }
+        } catch (Exception ignored){};
+        return objects;
+    }
+
+    @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        return retrieveBoxable(getClass(), clazz, this.dataMap.getDataMap(key));
+        return deserializeBoxable(new DataMapWrapper(this.dataMap.getDataMap(key)), clazz);
     }
 
     @Override
@@ -280,7 +339,7 @@ public class DataMapWrapper extends Boxer {
 
         T[] boxables = (T[]) Array.newInstance(clazz, dataMaps.size());
         for(int i = 0; i < dataMaps.size(); i++){
-            boxables[i] = retrieveBoxable(getClass(), clazz, dataMaps.get(i));
+            boxables[i] = deserializeBoxable(new DataMapWrapper(dataMaps.get(i)), clazz);
         }
         return boxables;
     }
@@ -296,7 +355,7 @@ public class DataMapWrapper extends Boxer {
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < dataMaps.size(); i++) {
-                boxables.add(retrieveBoxable(getClass(), clazz, dataMaps.get(i)));
+                boxables.add(deserializeBoxable(new DataMapWrapper(dataMaps.get(i)), clazz));
             }
         } catch (Exception e){};
         return boxables;

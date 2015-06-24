@@ -1,11 +1,10 @@
 package com.larswerkman.boxer.internal;
 
 import com.larswerkman.boxer.Boxer;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 
 import javax.lang.model.element.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.util.List;
 
 /**
@@ -15,6 +14,10 @@ final class BoxClass {
 
     private static final String BOXER_VARIABLE = "boxer";
     private static final String BOXABLE_VARIABLE = "boxable";
+    private static final ParameterizedTypeName BOXER_CLASS = ParameterizedTypeName.get(
+            ClassName.get(Boxer.class),
+            WildcardTypeName.subtypeOf(Object.class)
+    );
 
     private String className;
     private ClassName targetClass;
@@ -40,9 +43,9 @@ final class BoxClass {
                 .methodBuilder(BoxerProcessor.METHOD_SERIALIZE)
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .addParameter(targetClass, BOXABLE_VARIABLE)
-                .addParameter(Boxer.class, BOXER_VARIABLE);
+                .addParameter(BOXER_CLASS, BOXER_VARIABLE);
         for(FieldBinding field : fields){
-            builder.addStatement(field.serialize(BOXER_VARIABLE, BOXABLE_VARIABLE));
+            builder.addCode(field.serialize(BOXER_VARIABLE, BOXABLE_VARIABLE));
         }
         return builder.build();
     }
@@ -52,10 +55,10 @@ final class BoxClass {
                 .methodBuilder(BoxerProcessor.METHOD_DESERIALIZE)
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .returns(targetClass)
-                .addParameter(Boxer.class, BOXER_VARIABLE)
+                .addParameter(BOXER_CLASS, BOXER_VARIABLE)
                 .addStatement("$T $N = new $T()", targetClass, BOXABLE_VARIABLE, targetClass);
         for(FieldBinding field : fields){
-            builder.addStatement(field.deserialize(BOXER_VARIABLE, BOXABLE_VARIABLE));
+            builder.addCode(field.deserialize(BOXER_VARIABLE, BOXABLE_VARIABLE));
         }
         builder.addStatement("return $N", BOXABLE_VARIABLE);
         return builder.build();

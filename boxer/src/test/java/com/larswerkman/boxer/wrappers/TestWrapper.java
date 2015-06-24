@@ -6,39 +6,47 @@ import com.larswerkman.boxer.Boxer;
 import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by lars on 23-04-15.
  */
-public class TestWrapper extends Boxer {
+public class TestWrapper extends Boxer<HashMap<String, Object>> {
 
     private HashMap<String, Object> map;
 
     /**
      * Empty constructor, Can't be a generic type because of ClassNotFoundException
      *
-     * @param object Serialization object
+     * @param map Serialization object
      */
-    public TestWrapper(Object object) {
-        super(object);
-        this.map = (HashMap<String, Object>) object;
+    public TestWrapper(HashMap<String, Object> map) {
+        super(map);
+        this.map = map;
     }
 
+    @Override
+    public void add(String key, Object value) {
+        map.put(key, serialize(new TestWrapper(new HashMap<String, Object>()), value));
+    }
+
+    @Override
+    public void addArray(String key, Object[] value) {
+        HashMap<String, Object> boxeables = new HashMap<String, Object>();
+        boxeables.put("size", value.length);
+        for(int i = 0; i < value.length; i++){
+            boxeables.put(String.valueOf(i), serialize(new TestWrapper(new HashMap<String, Object>()), value[i]));
+        }
+        map.put(key, boxeables);
+    }
+
+    @Override
+    public void addList(String key, List<?> value) {
+        addArray(key, value.toArray());
+    }
 
     @Override
     public <T extends Boxable> void addBoxable(String key, T value) {
-        map.put(key, storeBoxable(getClass(), value, new HashMap<String, Object>()));
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
-        HashMap<String, Object> boxeables = new HashMap<String, Object>();
-        boxeables.put("size", value.size());
-        for(int i = 0; i < value.size(); i++){
-            boxeables.put(String.valueOf(i), storeBoxable(getClass(), value.get(i), new HashMap<String, Objects>()));
-        }
-        map.put(key, boxeables);
+        map.put(key, serializeBoxable(new TestWrapper(new HashMap<String, Object>()), value));
     }
 
     @Override
@@ -46,7 +54,17 @@ public class TestWrapper extends Boxer {
         HashMap<String, Object> boxeables = new HashMap<String, Object>();
         boxeables.put("size", value.length);
         for(int i = 0; i < value.length; i++){
-            boxeables.put(String.valueOf(i), storeBoxable(getClass(), value[i], new HashMap<String, Objects>()));
+            boxeables.put(String.valueOf(i), serializeBoxable(new TestWrapper(new HashMap<String, Object>()), value[i]));
+        }
+        map.put(key, boxeables);
+    }
+
+    @Override
+    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
+        HashMap<String, Object> boxeables = new HashMap<String, Object>();
+        boxeables.put("size", value.size());
+        for(int i = 0; i < value.size(); i++){
+            boxeables.put(String.valueOf(i), serializeBoxable(new TestWrapper(new HashMap<String, Object>()), value.get(i)));
         }
         map.put(key, boxeables);
     }
@@ -202,8 +220,50 @@ public class TestWrapper extends Boxer {
     }
 
     @Override
+    public <T> T get(String key, Class<T> clazz) {
+        HashMap<String, Object> map = (HashMap<String, Object>) this.map.get(key);
+        if(map == null){
+            return null;
+        }
+        return deserialize(new TestWrapper(map), clazz);
+    }
+
+    @Override
+    public <T> T[] getArray(String key, Class<T> clazz) {
+        HashMap<String, Object> values = (HashMap<String, Object>) map.get(key);
+        if(values == null){
+            return null;
+        }
+
+        int size = (Integer) values.get("size");
+        T[] boxables = (T[]) Array.newInstance(clazz, size);
+        for(int i = 0; i < size; i++){
+            boxables[i] = deserialize(new TestWrapper((HashMap<String, Object>) values.get(String.valueOf(i))), clazz);
+        }
+        return boxables;
+    }
+
+    @Override
+    public <T, E extends List<T>> E getList(String key, Class<T> clazz, Class<E> listtype) {
+        HashMap<String, Object> values = (HashMap<String, Object>) map.get(key);
+        if(values == null){
+            return null;
+        }
+
+        int size = (Integer) values.get("size");
+        E boxables = null;
+        try {
+            boxables = listtype.newInstance();
+            for (int i = 0; i < size; i++) {
+                boxables.add(deserialize(new TestWrapper((HashMap<String, Object>) values.get(String.valueOf(i))), clazz));
+            }
+        } catch (Exception e){/*Do Nothing*/};
+        return boxables;
+    }
+
+    @Override
     public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        return retrieveBoxable(getClass(), clazz, map.get(key));
+        return deserializeBoxable(new TestWrapper((HashMap<String, Object>) map.get(key)), clazz);
     }
 
     @Override
@@ -216,7 +276,7 @@ public class TestWrapper extends Boxer {
         int size = (Integer) values.get("size");
         T[] boxables = (T[]) Array.newInstance(clazz, size);
         for(int i = 0; i < size; i++){
-            boxables[i] = retrieveBoxable(getClass(), clazz, values.get(String.valueOf(i)));
+            boxables[i] = deserializeBoxable(new TestWrapper((HashMap<String, Object>) values.get(String.valueOf(i))), clazz);
         }
         return boxables;
     }
@@ -233,7 +293,7 @@ public class TestWrapper extends Boxer {
         try {
             boxables = listtype.newInstance();
             for (int i = 0; i < size; i++) {
-                boxables.add(retrieveBoxable(getClass(), clazz, values.get(String.valueOf(i))));
+                boxables.add(deserializeBoxable(new TestWrapper((HashMap<String, Object>) values.get(String.valueOf(i))), clazz));
             }
         } catch (Exception e){/*Do Nothing*/};
         return boxables;
