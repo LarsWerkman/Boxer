@@ -31,7 +31,7 @@ package com.larswerkman.boxer;
 public abstract class TypeAdapter<T> {
 
     /**
-     * Serialize an object of type {@link T}
+     * Serialize an object of type {@code T}
      * to a generic {@code Boxer<?>} object
      *
      * @param boxer The {@link Boxer} wrapper to serialize to
@@ -40,11 +40,11 @@ public abstract class TypeAdapter<T> {
     public abstract void serialize(Boxer<?> boxer, T object);
 
     /**
-     * Deserialize an object of type {@link T}
+     * Deserialize an object of type {@code T}
      * from a generic {@code Boxer<?>} object
      *
      * @param boxer The {@link Boxer} wrapper to deserialize from
-     * @return deserialized instance of type {@link T}
+     * @return deserialized instance of type {@code T}
      */
     public abstract T deserialize(Boxer<?> boxer);
 }
