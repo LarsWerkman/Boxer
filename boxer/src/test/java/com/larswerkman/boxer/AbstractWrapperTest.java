@@ -2,6 +2,7 @@ package com.larswerkman.boxer;
 
 import android.os.Bundle;
 import com.google.common.primitives.*;
+import com.larswerkman.boxer.annotations.Adapter;
 import com.larswerkman.boxer.boxables.*;
 import com.larswerkman.boxer.enums.PrimaryEnum;
 import org.assertj.core.api.Assertions;
@@ -67,6 +68,8 @@ public abstract class AbstractWrapperTest {
     private static final InheritanceMultipleBoxable INHERITANCE_MULTIPLE_BOXABLE = new InheritanceMultipleBoxable().setup();
     private static final ObjectBoxable OBJECT_BOXABLE = new ObjectBoxable().setup();
     private static final EnumBoxable ENUM_BOXABLE = new EnumBoxable().setup();
+    private static final AdapterBoxable ADAPTER_BOXABLE = new AdapterBoxable().setup();
+    private static final SerializeBoxable SERIALIZE_BOXABLE = new SerializeBoxable().setup();
 
     public abstract Boxer<?> getBoxer();
 
@@ -603,5 +606,21 @@ public abstract class AbstractWrapperTest {
         between();
         Assertions.assertThat(boxer.getIntArray(KEY))
                 .isEqualTo(INTEGER_ARRAY);
+    }
+
+    @Test
+    public void adapterBoxable(){
+        boxer.addBoxable(KEY, ADAPTER_BOXABLE);
+        between();
+        Assertions.assertThat(boxer.getBoxable(KEY, AdapterBoxable.class))
+                .isEqualTo(ADAPTER_BOXABLE);
+    }
+
+    @Test
+    public void serializeBoxable(){
+        boxer.addBoxable(KEY, SERIALIZE_BOXABLE);
+        between();
+        Assertions.assertThat(boxer.getBoxable(KEY, SerializeBoxable.class))
+                .isEqualTo(SERIALIZE_BOXABLE);
     }
 }
