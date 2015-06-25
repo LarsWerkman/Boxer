@@ -72,6 +72,47 @@ Boxer.removeWrapperForType(Target.class);
 Boxer.clearWrappers();
 ```
 
+TypeAdapters define how an non-Boxable class should be serialized and deserialized. TypeAdapter will need to be registered with the <code>@Adapter</code> annotation.
+The typeparameter of the TypeAdapter should be the class you want to serialize / deserialize.
+
+```java
+@Adapter
+public class DateTypeAdapter extends TypeAdapter<Date> {
+
+    private static final String TIME_KEY = "time_key";
+
+    @Override
+    public void serialize(Boxer<?> boxer, Date object) {
+        boxer.addLong(TIME_KEY, object.getTime());
+    }
+
+    @Override
+    public Date deserialize (Boxer<?> boxer) {
+        return new Date(boxer.getLong(TIME_KEY));
+    }
+}
+```
+
+<code>@Serialize</code> and <code>@Deserialize</code> are used to annotate methods that will be called after or before serialization or deserialization inside <code>Boxable</code> classes.
+
+Both annotations take an <code>Execution</code> enum as parameter to specify when they will be executed.
+Default executation behaviour will be after serialization or deserialization.
+
+The method can have a <code>Boxer</code> parameter or be empty.
+
+```java
+@Serialize
+public void serialization(Boxer<?> boxer){
+	//Do something
+}
+
+@Deserialize(Execution.BEFORE)
+public void deserialization(Boxer<?> boxer){
+	//Do something
+}
+```
+
+
 Current supported supported classes:
 
 * (Android) Bundle
@@ -87,7 +128,13 @@ Proguard
 -dontwarn com.larswerkman.boxer.internal.**
 -dontwarn com.larswerkman.boxer.wrappers.**
 -keep class **$Boxer { *; }
+-keep class **$Box { *; }
 -keepnames class * { @com.larswerkman.boxer.annotations.Box *;}
+-keepnames class *
+{ @com.larswerkman.boxer.annotations.Adapter *;}
+-keepclasseswithmembernames class * {
+    @com.larswerkman.boxer.annotations.* <methods>;
+}
 ```
 
 Dependency
@@ -98,19 +145,19 @@ Adding it as a dependency to your project.
 <dependency>
   <groupId>com.larswerkman</groupId>
   <artifactId>boxer</artifactId>
-  <version>0.0.4</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
 ```groovy
 dependencies {
-    compile 'com.larswerkman:boxer:0.0.4'
+    compile 'com.larswerkman:boxer:0.2.0'
 }
 ```
 License
 -------
 
-    Copyright 2014 Lars Werkman
+    Copyright 2015 Lars Werkman
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
