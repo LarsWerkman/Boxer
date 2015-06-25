@@ -1,10 +1,10 @@
 package com.larswerkman.boxer.internal;
 
 import com.larswerkman.boxer.Boxer;
+import com.larswerkman.boxer.Execution;
 import com.squareup.javapoet.*;
 
 import javax.lang.model.element.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.util.List;
 
 /**
@@ -23,11 +23,13 @@ final class BoxClass {
     private ClassName targetClass;
 
     private List<FieldBinding> fields;
+    private List<MethodBinding> methods;
 
-    public BoxClass(String className, ClassName targetClass, List<FieldBinding> fields){
+    public BoxClass(String className, ClassName targetClass, List<FieldBinding> fields, List<MethodBinding> methods){
         this.className = className;
         this.targetClass = targetClass;
         this.fields = fields;
+        this.methods = methods;
     }
 
     public TypeSpec build(){
@@ -44,8 +46,20 @@ final class BoxClass {
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .addParameter(targetClass, BOXABLE_VARIABLE)
                 .addParameter(BOXER_CLASS, BOXER_VARIABLE);
+        for(MethodBinding method : methods){
+            if(method.getMethod() == MethodBinding.Method.SERIALIZE
+                    && method.getExecution() == Execution.BEFORE){
+                builder.addCode(method.brew(BOXABLE_VARIABLE, BOXER_VARIABLE));
+            }
+        }
         for(FieldBinding field : fields){
             builder.addCode(field.serialize(BOXER_VARIABLE, BOXABLE_VARIABLE));
+        }
+        for(MethodBinding method : methods){
+            if(method.getMethod() == MethodBinding.Method.SERIALIZE
+                    && method.getExecution() == Execution.AFTER){
+                builder.addCode(method.brew(BOXABLE_VARIABLE, BOXER_VARIABLE));
+            }
         }
         return builder.build();
     }
@@ -57,8 +71,20 @@ final class BoxClass {
                 .returns(targetClass)
                 .addParameter(BOXER_CLASS, BOXER_VARIABLE)
                 .addStatement("$T $N = new $T()", targetClass, BOXABLE_VARIABLE, targetClass);
+        for(MethodBinding method : methods){
+            if(method.getMethod() == MethodBinding.Method.DESERIALIZE
+                    && method.getExecution() == Execution.BEFORE){
+                builder.addCode(method.brew(BOXABLE_VARIABLE, BOXER_VARIABLE));
+            }
+        }
         for(FieldBinding field : fields){
             builder.addCode(field.deserialize(BOXER_VARIABLE, BOXABLE_VARIABLE));
+        }
+        for(MethodBinding method : methods){
+            if(method.getMethod() == MethodBinding.Method.DESERIALIZE
+                    && method.getExecution() == Execution.AFTER){
+                builder.addCode(method.brew(BOXABLE_VARIABLE, BOXER_VARIABLE));
+            }
         }
         builder.addStatement("return $N", BOXABLE_VARIABLE);
         return builder.build();

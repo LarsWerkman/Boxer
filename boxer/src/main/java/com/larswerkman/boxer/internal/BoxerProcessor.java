@@ -15,13 +15,9 @@
  */
 package com.larswerkman.boxer.internal;
 
-import com.larswerkman.boxer.annotations.Adapter;
-import com.larswerkman.boxer.annotations.Box;
-import com.larswerkman.boxer.annotations.Wrap;
+import com.larswerkman.boxer.annotations.*;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -32,7 +28,6 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.List;
 
@@ -58,6 +53,8 @@ public class BoxerProcessor extends AbstractProcessor {
     private static TypeMirror TYPE_LIST;
     private static TypeMirror TYPE_OBJECT;
     private static TypeMirror TYPE_ADAPTER;
+    private static TypeMirror TYPE_BOXER;
+    private static TypeMirror TYPE_BOXER_WILDCARD;
 
     private List<AdapterBinding> adapters = new ArrayList<AdapterBinding>();
 
@@ -82,6 +79,12 @@ public class BoxerProcessor extends AbstractProcessor {
                 elementUtils.getTypeElement("java.util.List"),
                 typeUtils.getWildcardType(TYPE_OBJECT, null));
         TYPE_ADAPTER = elementUtils.getTypeElement("com.larswerkman.boxer.TypeAdapter").asType();
+        TYPE_BOXER = ((DeclaredType) elementUtils.getTypeElement("com.larswerkman.boxer.Boxer").asType())
+                .asElement().asType();
+        TYPE_BOXER_WILDCARD = typeUtils.getDeclaredType(
+                elementUtils.getTypeElement("com.larswerkman.boxer.Boxer"),
+                typeUtils.getWildcardType(TYPE_OBJECT, null)
+        );
 
         Set<? extends Element> boxableElements = env.getElementsAnnotatedWith(Box.class);
         Set<? extends Element> adapterElements = env.getElementsAnnotatedWith(Adapter.class);
@@ -101,16 +104,16 @@ public class BoxerProcessor extends AbstractProcessor {
         //Process all boxable classes
         for (Element element : boxableElements) {
             TypeElement typeElement = (TypeElement) element;
-
             if(!hasEmptyConstructor(typeElement)){
                 log.printMessage(Diagnostic.Kind.ERROR,
                         String.format("%s class must contain a non-args constructor",
                                 typeElement.getSimpleName()), typeElement);
             }
 
+            List<MethodBinding> methodBindings = parseMethodAnnotations(typeElement);
             List<FieldBinding> bindings = parseBoxableFields(typeElement);
             BoxClass boxClass = new BoxClass(element.getSimpleName().toString() + CLASS_EXTENSION,
-                    ClassName.get(typeElement), bindings);
+                    ClassName.get(typeElement), bindings, methodBindings);
 
             JavaFile file = JavaFile.builder(getPackage(typeElement), boxClass.build()).build();
             try {
@@ -150,6 +153,57 @@ public class BoxerProcessor extends AbstractProcessor {
             }
         }
         return adapters;
+    }
+
+    private List<MethodBinding> parseMethodAnnotations(TypeElement typeElement){
+        List<MethodBinding> bindings = new ArrayList<MethodBinding>();
+        for(Element element : getAllElements(typeElement)){
+
+            if(!element.getKind().equals(ElementKind.METHOD)
+                    || !hasAcceptableMethodAnnotation(element)){
+                continue;
+            }
+
+            if(element.getModifiers().contains(Modifier.PRIVATE)){
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("Annotated method %s should be accessible",
+                                element.getSimpleName()), typeElement);
+            }
+
+            ExecutableElement method = (ExecutableElement) element;
+            boolean hasArgument = false;
+
+            List<? extends VariableElement> params = method.getParameters();
+            if(params.size() == 1){
+                if(isBoxer(params.get(0).asType())){
+                    hasArgument = true;
+                } else {
+                    log.printMessage(Diagnostic.Kind.WARNING, params.get(0).asType().toString());
+                    log.printMessage(Diagnostic.Kind.WARNING, TYPE_BOXER.toString());
+                    log.printMessage(Diagnostic.Kind.WARNING, TYPE_BOXER_WILDCARD.toString());
+                    log.printMessage(Diagnostic.Kind.ERROR,
+                            String.format("Annotated method %s argument must be of type Boxer",
+                                    element.getSimpleName()), typeElement);
+                }
+            } else if(params.size() > 1) {
+                log.printMessage(Diagnostic.Kind.ERROR,
+                        String.format("Annotated method %s can't have more than 1 argument",
+                                element.getSimpleName()), typeElement);
+            }
+
+            Serialize serialize = element.getAnnotation(Serialize.class);
+            if(serialize != null){
+                bindings.add(new MethodBinding(element.getSimpleName().toString(),
+                        MethodBinding.Method.SERIALIZE, serialize.value(), hasArgument));
+            }
+
+            Deserialize deserialize = element.getAnnotation(Deserialize.class);
+            if(deserialize != null){
+                bindings.add(new MethodBinding(element.getSimpleName().toString(),
+                        MethodBinding.Method.DESERIALIZE, deserialize.value(), hasArgument));
+            }
+        }
+        return bindings;
     }
 
     private List<FieldBinding> parseBoxableFields(TypeElement typeElement){
@@ -289,6 +343,11 @@ public class BoxerProcessor extends AbstractProcessor {
         return null;
     }
 
+    private boolean hasAcceptableMethodAnnotation(Element element){
+        return (element.getAnnotation(Serialize.class) != null) ||
+                (element.getAnnotation(Deserialize.class) != null);
+    }
+
     private boolean isAcceptable(TypeMirror type) {
         return (isPrimitiveOrWrapper(type)
                 || isString(type)
@@ -304,6 +363,11 @@ public class BoxerProcessor extends AbstractProcessor {
             }
         }
         return false;
+    }
+
+    private boolean isBoxer(TypeMirror type){
+        return typeUtils.isAssignable(type, TYPE_BOXER)
+                || typeUtils.isSameType(type, TYPE_BOXER_WILDCARD);
     }
 
     private boolean hasEmptyConstructor(TypeElement element){
