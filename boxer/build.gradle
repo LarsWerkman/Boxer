@@ -2,7 +2,7 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 dependencies {
-    compile 'com.squareup:javapoet:1.2.0-SNAPSHOT'
+    compile 'com.squareup:javapoet:1.2.0'
 
     //Testing dependency's
     testCompile group: 'junit', name: 'junit', version: '4.12'
@@ -16,7 +16,7 @@ dependencies {
 }
 
 group = 'com.larswerkman'
-version = '0.2.0'
+version = '0.2.1'
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'

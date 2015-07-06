@@ -145,13 +145,13 @@ Adding it as a dependency to your project.
 <dependency>
   <groupId>com.larswerkman</groupId>
   <artifactId>boxer</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
 </dependency>
 ```
 
 ```groovy
 dependencies {
-    compile 'com.larswerkman:boxer:0.2.0'
+    compile 'com.larswerkman:boxer:0.2.1'
 }
 ```
 License
