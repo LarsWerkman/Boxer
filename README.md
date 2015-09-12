@@ -127,8 +127,8 @@ Proguard
 ```groovy
 -dontwarn com.larswerkman.boxer.internal.**
 -dontwarn com.larswerkman.boxer.wrappers.**
--keep class **$Boxer { *; }
--keep class **$Box { *; }
+-keep class **$$Boxer { *; }
+-keep class **$$Box { *; }
 -keepnames class * { @com.larswerkman.boxer.annotations.Box *;}
 -keepnames class *
 { @com.larswerkman.boxer.annotations.Adapter *;}
