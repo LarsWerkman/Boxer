@@ -271,7 +271,7 @@ public abstract class Boxer<S> {
      * @return {@link Class} for the {@link com.larswerkman.boxer.annotations.Box} class of a {@link Boxable}.
      */
     private static <T extends Boxable> Class<?> boxableClass(Class<T> clazz) throws ClassNotFoundException {
-        return Class.forName(clazz.getCanonicalName() + BoxerProcessor.CLASS_EXTENSION);
+        return Class.forName(clazz.getName() + BoxerProcessor.CLASS_EXTENSION);
     }
 
     /**************************

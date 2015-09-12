@@ -1,12 +1,12 @@
 package com.larswerkman.boxer;
 
-import android.os.Bundle;
 import com.google.common.primitives.*;
-import com.larswerkman.boxer.annotations.Adapter;
 import com.larswerkman.boxer.boxables.*;
 import com.larswerkman.boxer.enums.PrimaryEnum;
 import org.assertj.core.api.Assertions;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
@@ -70,6 +70,7 @@ public abstract class AbstractWrapperTest {
     private static final EnumBoxable ENUM_BOXABLE = new EnumBoxable().setup();
     private static final AdapterBoxable ADAPTER_BOXABLE = new AdapterBoxable().setup();
     private static final SerializeBoxable SERIALIZE_BOXABLE = new SerializeBoxable().setup();
+    private static final NestedBoxable NESTED_BOXABLE = new NestedBoxable().setup();
 
     public abstract Boxer<?> getBoxer();
 
@@ -93,7 +94,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void adapter(){
+    public void adapter() {
         Assertions.assertThat(boxer.get(KEY, Date.class))
                 .isNull();
         between();
@@ -104,7 +105,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void adapterArray(){
+    public void adapterArray() {
         Assertions.assertThat(boxer.getArray(KEY, Date.class))
                 .isNull();
         between();
@@ -115,7 +116,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void adapterList(){
+    public void adapterList() {
         Assertions.assertThat(boxer.getList(KEY, Date.class, ArrayList.class))
                 .isNull();
         between();
@@ -126,7 +127,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void boxable(){
+    public void boxable() {
         Assertions.assertThat(boxer.getBoxable(KEY, PrimaryBoxable.class))
                 .isNull();
         between();
@@ -137,7 +138,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void boxableArray(){
+    public void boxableArray() {
         Assertions.assertThat(boxer.getBoxableArray(KEY, PrimaryBoxable.class))
                 .isNull();
         between();
@@ -148,7 +149,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void boxableList(){
+    public void boxableList() {
         Assertions.assertThat(boxer.getBoxableList(KEY, PrimaryBoxable.class, ArrayList.class))
                 .isNull();
         between();
@@ -159,7 +160,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void Enum(){
+    public void Enum() {
         Assertions.assertThat(boxer.getEnum(KEY, PrimaryEnum.class))
                 .isNull();
         between();
@@ -170,7 +171,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void enumArray(){
+    public void enumArray() {
         Assertions.assertThat(boxer.getEnumArray(KEY, PrimaryEnum.class))
                 .isNull();
         between();
@@ -181,7 +182,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void enumList(){
+    public void enumList() {
         Assertions.assertThat(boxer.getEnumList(KEY, PrimaryEnum.class, ArrayList.class))
                 .isNull();
         between();
@@ -225,7 +226,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void Boolean(){
+    public void Boolean() {
         Assertions.assertThat(boxer.getBoolean(KEY))
                 .isFalse();
         between();
@@ -236,7 +237,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void booleanArray(){
+    public void booleanArray() {
         Assertions.assertThat(boxer.getBooleanArray(KEY))
                 .isNull();
         between();
@@ -247,7 +248,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void booleanList(){
+    public void booleanList() {
         Assertions.assertThat(boxer.getBooleanList(KEY, ArrayList.class))
                 .isNull();
         between();
@@ -258,7 +259,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void Byte(){
+    public void Byte() {
         Assertions.assertThat(boxer.getByte(KEY))
                 .isZero();
         between();
@@ -269,7 +270,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void byteArray(){
+    public void byteArray() {
         Assertions.assertThat(boxer.getByteArray(KEY))
                 .isNull();
         between();
@@ -280,7 +281,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void byteList(){
+    public void byteList() {
         Assertions.assertThat(boxer.getByteList(KEY, ArrayList.class))
                 .isNull();
         between();
@@ -291,7 +292,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void character(){
+    public void character() {
         //Work around because of weird behaviour of AssertJ
         assert boxer.getChar(KEY) == 0;
 
@@ -303,7 +304,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void characterArray(){
+    public void characterArray() {
         Assertions.assertThat(boxer.getCharArray(KEY))
                 .isNull();
         between();
@@ -314,7 +315,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void characterList(){
+    public void characterList() {
         Assertions.assertThat(boxer.getCharList(KEY, ArrayList.class))
                 .isNull();
         between();
@@ -325,7 +326,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void Short(){
+    public void Short() {
         Assertions.assertThat(boxer.getShort(KEY))
                 .isZero();
         between();
@@ -336,7 +337,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void shortArray(){
+    public void shortArray() {
         Assertions.assertThat(boxer.getShortArray(KEY))
                 .isNull();
         between();
@@ -347,7 +348,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void shortList(){
+    public void shortList() {
         Assertions.assertThat(boxer.getShortList(KEY, ArrayList.class))
                 .isNull();
         between();
@@ -391,7 +392,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void Long(){
+    public void Long() {
         Assertions.assertThat(boxer.getLong(KEY))
                 .isZero();
         between();
@@ -402,7 +403,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void longArray(){
+    public void longArray() {
         Assertions.assertThat(boxer.getLongArray(KEY))
                 .isNull();
         between();
@@ -413,7 +414,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void longList(){
+    public void longList() {
         Assertions.assertThat(boxer.getLongList(KEY, ArrayList.class))
                 .isNull();
         between();
@@ -424,7 +425,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void Double(){
+    public void Double() {
         Assertions.assertThat(boxer.getDouble(KEY))
                 .isZero();
         between();
@@ -435,7 +436,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void doubleArray(){
+    public void doubleArray() {
         Assertions.assertThat(boxer.getDoubleArray(KEY))
                 .isNull();
         between();
@@ -446,7 +447,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void doubleList(){
+    public void doubleList() {
         Assertions.assertThat(boxer.getDoubleList(KEY, ArrayList.class))
                 .isNull();
         between();
@@ -457,7 +458,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void Float(){
+    public void Float() {
         Assertions.assertThat(boxer.getFloat(KEY))
                 .isZero();
         between();
@@ -468,7 +469,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void floatArray(){
+    public void floatArray() {
         Assertions.assertThat(boxer.getFloatArray(KEY))
                 .isNull();
         between();
@@ -479,7 +480,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void floatList(){
+    public void floatList() {
         Assertions.assertThat(boxer.getFloatList(KEY, ArrayList.class))
                 .isNull();
         between();
@@ -494,7 +495,7 @@ public abstract class AbstractWrapperTest {
      */
 
     @Test
-    public void listBoxable(){
+    public void listBoxable() {
         boxer.addBoxable(KEY, LIST_BOXABLE);
         between();
 
@@ -523,7 +524,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void transientBoxable(){
+    public void transientBoxable() {
         boxer.addBoxable(KEY, TRANSIENT_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, TransientBoxable.class))
@@ -531,7 +532,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void AccessModifiers(){
+    public void AccessModifiers() {
         boxer.addBoxable(KEY, ACCESS_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, AccessBoxable.class))
@@ -539,7 +540,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void inheritencePrimaryBoxable(){
+    public void inheritencePrimaryBoxable() {
         boxer.addBoxable(KEY, INHERITANCE_PRIMARY_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, InheritancePrimaryBoxable.class))
@@ -547,7 +548,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void inheritenceAccessBoxable(){
+    public void inheritenceAccessBoxable() {
         boxer.addBoxable(KEY, INHERITANCE_ACCESS_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, InheritanceAccessBoxable.class))
@@ -555,7 +556,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void inheritenceMultipleBoxable(){
+    public void inheritenceMultipleBoxable() {
         boxer.addBoxable(KEY, INHERITANCE_MULTIPLE_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, InheritanceMultipleBoxable.class))
@@ -563,7 +564,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void objectBoxable(){
+    public void objectBoxable() {
         boxer.addBoxable(KEY, OBJECT_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, ObjectBoxable.class))
@@ -571,7 +572,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void enumBoxable(){
+    public void enumBoxable() {
         boxer.addBoxable(KEY, ENUM_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, EnumBoxable.class))
@@ -579,7 +580,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void replaceBoxable(){
+    public void replaceBoxable() {
         boxer.addBoxable(KEY, BOXABLE);
         between();
         boxer.addBoxable(KEY, new PrimaryBoxable());
@@ -589,8 +590,8 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void replaceList(){
-        boxer.addIntList(KEY, Arrays.asList(1, 2, 3, 4 , 5));
+    public void replaceList() {
+        boxer.addIntList(KEY, Arrays.asList(1, 2, 3, 4, 5));
         between();
         boxer.addIntList(KEY, Ints.asList(INTEGER_ARRAY));
         between();
@@ -609,7 +610,7 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void adapterBoxable(){
+    public void adapterBoxable() {
         boxer.addBoxable(KEY, ADAPTER_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, AdapterBoxable.class))
@@ -617,10 +618,18 @@ public abstract class AbstractWrapperTest {
     }
 
     @Test
-    public void serializeBoxable(){
+    public void serializeBoxable() {
         boxer.addBoxable(KEY, SERIALIZE_BOXABLE);
         between();
         Assertions.assertThat(boxer.getBoxable(KEY, SerializeBoxable.class))
                 .isEqualTo(SERIALIZE_BOXABLE);
+    }
+
+    @Test
+    public void NestedBoxable() {
+        boxer.addBoxable(KEY, NESTED_BOXABLE);
+        between();
+        Assertions.assertThat(boxer.getBoxable(KEY, NestedBoxable.class))
+                .isEqualTo(NESTED_BOXABLE);
     }
 }

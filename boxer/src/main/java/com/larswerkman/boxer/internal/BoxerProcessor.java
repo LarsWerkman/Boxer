@@ -41,10 +41,10 @@ import java.util.List;
 public class BoxerProcessor extends AbstractProcessor {
 
     public static final String ADAPTER_PACKAGE_NAME = "com.larswerkman.boxer";
-    public static final String ADAPTER_CLASS_NAME = "Adapters$Box";
+    public static final String ADAPTER_CLASS_NAME = "Adapters$$Box";
     public static final String ADAPTER_METHOD_GET = "get";
 
-    public static final String CLASS_EXTENSION = "$Boxer";
+    public static final String CLASS_EXTENSION = "$$Boxer";
     public static final String METHOD_SERIALIZE = "serialize";
     public static final String METHOD_DESERIALIZE = "deserialize";
 
@@ -112,7 +112,8 @@ public class BoxerProcessor extends AbstractProcessor {
 
             List<MethodBinding> methodBindings = parseMethodAnnotations(typeElement);
             List<FieldBinding> bindings = parseBoxableFields(typeElement);
-            BoxClass boxClass = new BoxClass(element.getSimpleName().toString() + CLASS_EXTENSION,
+
+            BoxClass boxClass = new BoxClass(getCanonicalName(typeElement) + CLASS_EXTENSION,
                     ClassName.get(typeElement), bindings, methodBindings);
 
             JavaFile file = JavaFile.builder(getPackage(typeElement), boxClass.build()).build();
@@ -452,6 +453,12 @@ public class BoxerProcessor extends AbstractProcessor {
         } else {
             return "";
         }
+    }
+
+    private String getCanonicalName(TypeElement type){
+        return type.getQualifiedName().toString()
+                .replace(getPackage(type) + ".", "")
+                .replace(".", "$");
     }
 
     private List<? extends Element> getAllElements(TypeElement element){
