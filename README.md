@@ -5,15 +5,13 @@ Annotation based serialization library for Java and Android frameworks,
 by generating boilerplate code.
 
 * Define classes as serializable with the <code>@Box</code> annotation.
-And by implementing the <code>Boxable</code> interface.
-* ~~Serialize fields with the <code>@Packet</code> annotation~~ Depracted
 * By default all fields will be serialized, except fields with the transient modifier
 * the <code>@Wrap</code> annotation will wrap a <code>List</code> fields into the appropriate Subclass. (Subclass needs to have a no-args constructor)
 * Default non-class serialization possible
 
 ```java
 @Box
-public class Example implements Boxable {
+public class Example {
 
     private int height;
     private transient int width;
@@ -43,7 +41,7 @@ public class ExampleActivity extends Activity {
         super.onSaveInstanceState(outState);
 
         Boxer boxer = Boxer.from(outState);
-        boxer.addBoxable("Example", new Example());
+        boxer.add("Example", new Example());
     }
 
     @Override
@@ -51,7 +49,7 @@ public class ExampleActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         Boxer boxer = Boxer.from(savedInstanceState);
-        boxer.getBoxable("Example", Example.class);
+        boxer.get("Example", Example.class);
     }
 }
 ```
@@ -72,8 +70,9 @@ Boxer.removeWrapperForType(Target.class);
 Boxer.clearWrappers();
 ```
 
-TypeAdapters define how an non-Boxable class should be serialized and deserialized. TypeAdapter will need to be registered with the <code>@Adapter</code> annotation.
-The typeparameter of the TypeAdapter should be the class you want to serialize / deserialize.
+TypeAdapters define how an non-Boxable class should be serialized and deserialized. 
+TypeAdapter will need to be registered with the <code>@Adapter</code> annotation.
+The type parameter of the TypeAdapter should be the class you want to serialize / deserialize.
 
 ```java
 @Adapter
@@ -96,7 +95,7 @@ public class DateTypeAdapter extends TypeAdapter<Date> {
 <code>@Serialize</code> and <code>@Deserialize</code> are used to annotate methods that will be called after or before serialization or deserialization inside <code>Boxable</code> classes.
 
 Both annotations take an <code>Execution</code> enum as parameter to specify when they will be executed.
-Default executation behaviour will be after serialization or deserialization.
+Default execution behaviour will be after serialization or deserialization.
 
 The method can have a <code>Boxer</code> parameter or be empty.
 
@@ -128,10 +127,9 @@ Proguard
 -dontwarn com.larswerkman.boxer.internal.**
 -dontwarn com.larswerkman.boxer.wrappers.**
 -keep class **$$Boxer { *; }
--keep class **$$Box { *; }
+-keep class **_TypeAdapter { *; }
 -keepnames class * { @com.larswerkman.boxer.annotations.Box *;}
--keepnames class *
-{ @com.larswerkman.boxer.annotations.Adapter *;}
+-keepnames class * { @com.larswerkman.boxer.annotations.Adapter *;}
 -keepclasseswithmembernames class * {
     @com.larswerkman.boxer.annotations.* <methods>;
 }
@@ -171,5 +169,5 @@ License
     See the License for the specific language governing permissions and
     limitations under the License.
 
-<h2>Devoleped By</h2>
+<h2>Developed By</h2>
 **Lars Werkman**
