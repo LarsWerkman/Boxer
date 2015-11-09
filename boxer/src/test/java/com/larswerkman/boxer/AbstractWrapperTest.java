@@ -128,34 +128,34 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void boxable() {
-        Assertions.assertThat(boxer.getBoxable(KEY, PrimaryBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, PrimaryBoxable.class))
                 .isNull();
         between();
-        boxer.addBoxable(KEY, BOXABLE);
+        boxer.add(KEY, BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, PrimaryBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, PrimaryBoxable.class))
                 .isEqualTo(BOXABLE);
     }
 
     @Test
     public void boxableArray() {
-        Assertions.assertThat(boxer.getBoxableArray(KEY, PrimaryBoxable.class))
+        Assertions.assertThat(boxer.getArray(KEY, PrimaryBoxable.class))
                 .isNull();
         between();
-        boxer.addBoxableArray(KEY, BOXABLE_ARRAY);
+        boxer.addArray(KEY, BOXABLE_ARRAY);
         between();
-        Assertions.assertThat(boxer.getBoxableArray(KEY, PrimaryBoxable.class))
+        Assertions.assertThat(boxer.getArray(KEY, PrimaryBoxable.class))
                 .isEqualTo(BOXABLE_ARRAY);
     }
 
     @Test
     public void boxableList() {
-        Assertions.assertThat(boxer.getBoxableList(KEY, PrimaryBoxable.class, ArrayList.class))
+        Assertions.assertThat(boxer.getList(KEY, PrimaryBoxable.class, ArrayList.class))
                 .isNull();
         between();
-        boxer.addBoxableList(KEY, Arrays.asList(BOXABLE_ARRAY));
+        boxer.addList(KEY, Arrays.asList(BOXABLE_ARRAY));
         between();
-        Assertions.assertThat(boxer.getBoxableList(KEY, PrimaryBoxable.class, ArrayList.class))
+        Assertions.assertThat(boxer.getList(KEY, PrimaryBoxable.class, ArrayList.class))
                 .isEqualTo(Arrays.asList(BOXABLE_ARRAY));
     }
 
@@ -496,10 +496,10 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void listBoxable() {
-        boxer.addBoxable(KEY, LIST_BOXABLE);
+        boxer.add(KEY, LIST_BOXABLE);
         between();
 
-        ListBoxable listBoxable = boxer.getBoxable(KEY, ListBoxable.class);
+        ListBoxable listBoxable = boxer.get(KEY, ListBoxable.class);
         Assertions.assertThat(listBoxable.defaultList)
                 .isOfAnyClassIn(ArrayList.class)
                 .isEqualTo(LIST_BOXABLE.defaultList);
@@ -525,67 +525,67 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void transientBoxable() {
-        boxer.addBoxable(KEY, TRANSIENT_BOXABLE);
+        boxer.add(KEY, TRANSIENT_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, TransientBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, TransientBoxable.class))
                 .isNotEqualTo(TRANSIENT_BOXABLE);
     }
 
     @Test
     public void AccessModifiers() {
-        boxer.addBoxable(KEY, ACCESS_BOXABLE);
+        boxer.add(KEY, ACCESS_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, AccessBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, AccessBoxable.class))
                 .isEqualTo(ACCESS_BOXABLE);
     }
 
     @Test
     public void inheritencePrimaryBoxable() {
-        boxer.addBoxable(KEY, INHERITANCE_PRIMARY_BOXABLE);
+        boxer.add(KEY, INHERITANCE_PRIMARY_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, InheritancePrimaryBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, InheritancePrimaryBoxable.class))
                 .isEqualTo(INHERITANCE_PRIMARY_BOXABLE);
     }
 
     @Test
     public void inheritenceAccessBoxable() {
-        boxer.addBoxable(KEY, INHERITANCE_ACCESS_BOXABLE);
+        boxer.add(KEY, INHERITANCE_ACCESS_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, InheritanceAccessBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, InheritanceAccessBoxable.class))
                 .isEqualTo(INHERITANCE_ACCESS_BOXABLE);
     }
 
     @Test
     public void inheritenceMultipleBoxable() {
-        boxer.addBoxable(KEY, INHERITANCE_MULTIPLE_BOXABLE);
+        boxer.add(KEY, INHERITANCE_MULTIPLE_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, InheritanceMultipleBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, InheritanceMultipleBoxable.class))
                 .isEqualTo(INHERITANCE_MULTIPLE_BOXABLE);
     }
 
     @Test
     public void objectBoxable() {
-        boxer.addBoxable(KEY, OBJECT_BOXABLE);
+        boxer.add(KEY, OBJECT_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, ObjectBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, ObjectBoxable.class))
                 .isEqualTo(OBJECT_BOXABLE);
     }
 
     @Test
     public void enumBoxable() {
-        boxer.addBoxable(KEY, ENUM_BOXABLE);
+        boxer.add(KEY, ENUM_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, EnumBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, EnumBoxable.class))
                 .isEqualTo(ENUM_BOXABLE);
     }
 
     @Test
     public void replaceBoxable() {
-        boxer.addBoxable(KEY, BOXABLE);
+        boxer.add(KEY, BOXABLE);
         between();
-        boxer.addBoxable(KEY, new PrimaryBoxable());
+        boxer.add(KEY, new PrimaryBoxable());
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, PrimaryBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, PrimaryBoxable.class))
                 .isEqualTo(new PrimaryBoxable());
     }
 
@@ -611,25 +611,25 @@ public abstract class AbstractWrapperTest {
 
     @Test
     public void adapterBoxable() {
-        boxer.addBoxable(KEY, ADAPTER_BOXABLE);
+        boxer.add(KEY, ADAPTER_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, AdapterBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, AdapterBoxable.class))
                 .isEqualTo(ADAPTER_BOXABLE);
     }
 
     @Test
     public void serializeBoxable() {
-        boxer.addBoxable(KEY, SERIALIZE_BOXABLE);
+        boxer.add(KEY, SERIALIZE_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, SerializeBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, SerializeBoxable.class))
                 .isEqualTo(SERIALIZE_BOXABLE);
     }
 
     @Test
     public void NestedBoxable() {
-        boxer.addBoxable(KEY, NESTED_BOXABLE);
+        boxer.add(KEY, NESTED_BOXABLE);
         between();
-        Assertions.assertThat(boxer.getBoxable(KEY, NestedBoxable.class))
+        Assertions.assertThat(boxer.get(KEY, NestedBoxable.class))
                 .isEqualTo(NESTED_BOXABLE);
     }
 }
