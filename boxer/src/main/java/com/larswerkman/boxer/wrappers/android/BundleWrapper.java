@@ -16,7 +16,6 @@
 package com.larswerkman.boxer.wrappers.android;
 
 import android.os.Bundle;
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
 
 import java.lang.reflect.Array;
@@ -56,31 +55,6 @@ public class BundleWrapper extends Boxer<Bundle> {
         bundle.putInt("size", value.size());
         for(int i = 0; i < value.size(); i++){
             bundle.putBundle(String.valueOf(i), serialize(new BundleWrapper(new Bundle()), value.get(i)));
-        }
-        this.bundle.putBundle(key, bundle);
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxable(String key, T value) {
-        this.bundle.putBundle(key, serializeBoxable(new BundleWrapper(new Bundle()), value));
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableArray(String key, T[] value) {
-        Bundle bundle = new Bundle();
-        bundle.putInt("size", value.length);
-        for(int i = 0; i < value.length; i++){
-            bundle.putBundle(String.valueOf(i), serializeBoxable(new BundleWrapper(new Bundle()), value[i]));
-        }
-        this.bundle.putBundle(key, bundle);
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
-        Bundle bundle = new Bundle();
-        bundle.putInt("size", value.size());
-        for(int i = 0; i < value.size(); i++){
-            bundle.putBundle(String.valueOf(i), serializeBoxable(new BundleWrapper(new Bundle()), value.get(i)));
         }
         this.bundle.putBundle(key, bundle);
     }
@@ -314,48 +288,6 @@ public class BundleWrapper extends Boxer<Bundle> {
                 boxables.add(deserialize(new BundleWrapper(bundle.getBundle(String.valueOf(i))), clazz));
             }
         } catch (Exception ignored){};
-        return boxables;
-    }
-
-    @Override
-    public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        Bundle bundle = this.bundle.getBundle(key);
-        if(bundle == null){
-            return null;
-        }
-        return deserializeBoxable(new BundleWrapper(bundle), clazz);
-    }
-
-    @Override
-    public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
-        Bundle bundle = this.bundle.getBundle(key);
-        if(bundle == null) {
-            return null;
-        }
-
-        int size = bundle.getInt("size");
-        T[] boxables = (T[]) Array.newInstance(clazz, size);
-        for(int i = 0; i < size; i++){
-            boxables[i] = deserializeBoxable(new BundleWrapper(bundle.getBundle(String.valueOf(i))), clazz);
-        }
-        return boxables;
-    }
-
-    @Override
-    public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
-        Bundle bundle = this.bundle.getBundle(key);
-        if(bundle == null) {
-            return null;
-        }
-
-        int size = bundle.getInt("size");
-        E boxables = null;
-        try {
-            boxables = listtype.newInstance();
-            for (int i = 0; i < size; i++) {
-                boxables.add(deserializeBoxable(new BundleWrapper(bundle.getBundle(String.valueOf(i))), clazz));
-            }
-        } catch (Exception e){/*Do Nothing*/};
         return boxables;
     }
 

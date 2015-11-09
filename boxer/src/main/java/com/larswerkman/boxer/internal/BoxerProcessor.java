@@ -28,6 +28,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.List;
 
@@ -40,15 +41,16 @@ import java.util.List;
 })
 public class BoxerProcessor extends AbstractProcessor {
 
-    public static final String ADAPTER_PACKAGE_NAME = "com.larswerkman.boxer";
-    public static final String ADAPTER_CLASS_NAME = "Adapters$$Box";
-    public static final String ADAPTER_METHOD_GET = "get";
+    public static final String PROCESSOR_NAME = "com.larswerkman.boxer.internal.BoxerProcessor";
 
-    public static final String CLASS_EXTENSION = "$$Boxer";
+    public static final String ADAPTER_PACKAGE_NAME = "com.larswerkman.boxer";
+    public static final String ADAPTER_CLASS_NAME = "GeneratedAdapters$$Boxer";
+    public static final String ADAPTER_METHOD_GET = "getAdapter";
+
+    public static final String CLASS_EXTENSION = "_TypeAdapter";
     public static final String METHOD_SERIALIZE = "serialize";
     public static final String METHOD_DESERIALIZE = "deserialize";
 
-    private static TypeMirror TYPE_BOXABLE;
     private static TypeMirror TYPE_STRING;
     private static TypeMirror TYPE_LIST;
     private static TypeMirror TYPE_OBJECT;
@@ -73,7 +75,6 @@ public class BoxerProcessor extends AbstractProcessor {
         typeUtils = processingEnv.getTypeUtils();
 
         TYPE_OBJECT = elementUtils.getTypeElement("java.lang.Object").asType();
-        TYPE_BOXABLE = elementUtils.getTypeElement("com.larswerkman.boxer.Boxable").asType();
         TYPE_STRING = elementUtils.getTypeElement("java.lang.String").asType();
         TYPE_LIST = typeUtils.getDeclaredType(
                 elementUtils.getTypeElement("java.util.List"),
@@ -92,13 +93,6 @@ public class BoxerProcessor extends AbstractProcessor {
         //Process all adapters classes
         if(!adapterElements.isEmpty()) {
             adapters.addAll(parseTypeAdapters(adapterElements));
-            JavaFile adaptersClass = JavaFile.builder(ADAPTER_PACKAGE_NAME,
-                    new AdaptersClass(adapters).build()).build();
-            try {
-                adaptersClass.writeTo(filer);
-            } catch (IOException e) {
-                log.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
-            }
         }
 
         //Process all boxable classes
@@ -113,14 +107,27 @@ public class BoxerProcessor extends AbstractProcessor {
             List<MethodBinding> methodBindings = parseMethodAnnotations(typeElement);
             List<FieldBinding> bindings = parseBoxableFields(typeElement);
 
-            BoxClass boxClass = new BoxClass(getCanonicalName(typeElement) + CLASS_EXTENSION,
+            String name = getCanonicalName(typeElement) + CLASS_EXTENSION;
+            BoxClass boxClass = new BoxClass(name,
                     ClassName.get(typeElement), bindings, methodBindings);
 
             JavaFile file = JavaFile.builder(getPackage(typeElement), boxClass.build()).build();
             try {
                 file.writeTo(filer);
+                adapters.add(new AdapterBinding(ClassName.get(file.packageName, name),typeElement.asType()));
             } catch (IOException e) {
                 log.printMessage(Diagnostic.Kind.ERROR, e.getMessage(), element);
+            }
+        }
+
+        if(!adapters.isEmpty()) {
+            JavaFile adaptersClass = JavaFile.builder(ADAPTER_PACKAGE_NAME,
+                    new AdaptersClass(adapters).build()).build();
+            try {
+                adaptersClass.writeTo(filer);
+                adapters.clear();
+            } catch (IOException e) {
+                log.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
             }
         }
 
@@ -145,8 +152,7 @@ public class BoxerProcessor extends AbstractProcessor {
 
                 //Returns first TypeArgument which will be the target class.
                 TypeMirror targetType = ((DeclaredType) superType).getTypeArguments().get(0);
-
-                adapters.add(new AdapterBinding(typeElement.asType(), targetType));
+                adapters.add(new AdapterBinding(ClassName.get(typeElement), targetType));
             } else {
                 log.printMessage(Diagnostic.Kind.ERROR,
                         String.format("%s class must extend TypeAdapter class",
@@ -321,11 +327,9 @@ public class BoxerProcessor extends AbstractProcessor {
     private String getMethodType(TypeMirror type){
         if(isString(type)){
             return "String";
-        } else if(isBoxable(type)){
-            return "Boxable";
         } else if(isEnum(type)) {
             return "Enum";
-        } else if(isAdapter(type)){
+        } else if(isAdapter(type) || isBoxable(type)){
             return "";
         }
 
@@ -409,7 +413,7 @@ public class BoxerProcessor extends AbstractProcessor {
     }
 
     private boolean isBoxable(TypeMirror type){
-        return typeUtils.isAssignable(type, TYPE_BOXABLE);
+        return typeUtils.asElement(type) != null && findAnnotationMirror(typeUtils.asElement(type), Box.class) != null;
     }
 
     private boolean isEnum(TypeMirror type) {
@@ -471,6 +475,22 @@ public class BoxerProcessor extends AbstractProcessor {
             superType = typeElement.getSuperclass();
         }
         return fieldElements;
+    }
+
+    public AnnotationMirror findAnnotationMirror(Element annotatedElement, Class<? extends Annotation> annotationClass) {
+        List<? extends AnnotationMirror> annotationMirrors = annotatedElement.getAnnotationMirrors();
+
+        for (AnnotationMirror annotationMirror : annotationMirrors) {
+            TypeElement annotationElement = (TypeElement) annotationMirror.getAnnotationType().asElement();
+            if (isAnnotation(annotationElement, annotationClass)) {
+                return annotationMirror;
+            }
+        }
+        return null;
+    }
+
+    private boolean isAnnotation(TypeElement annotation, Class<? extends Annotation> annotationClass) {
+        return annotation.getQualifiedName().toString().equals(annotationClass.getName());
     }
 
     public static String capitalize(String string) {

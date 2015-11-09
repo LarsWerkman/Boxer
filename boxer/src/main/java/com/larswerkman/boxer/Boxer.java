@@ -16,15 +16,15 @@
 package com.larswerkman.boxer;
 
 import com.larswerkman.boxer.internal.BoxerProcessor;
+import com.larswerkman.boxer.internal.GeneratedAdapters;
 import com.larswerkman.boxer.wrappers.android.BundleWrapper;
 import com.larswerkman.boxer.wrappers.android.DataMapWrapper;
 import com.larswerkman.boxer.wrappers.android.ParcelWrapper;
 import com.larswerkman.boxer.wrappers.android.SQLiteWrapper;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract wrapper class, used to deserialize wrapper.
@@ -39,6 +39,8 @@ public abstract class Boxer<S> {
 
     private static HashMap<Class, Class<? extends Boxer>> wrappers = new HashMap<Class, Class<? extends Boxer>>();
     private static HashMap<String, Class<? extends Boxer>> defaultWrappers = new HashMap<String, Class<? extends Boxer>>();
+
+    private static GeneratedAdapters adapters;
 
     static {
         defaultWrappers.put("android.os.Bundle", BundleWrapper.class);
@@ -146,7 +148,6 @@ public abstract class Boxer<S> {
         wrappers.clear();
     }
 
-
     /**
      * Helper method used to serialize an object which has a
      * {@link TypeAdapter} to the specified wrapper.
@@ -159,24 +160,6 @@ public abstract class Boxer<S> {
     @SuppressWarnings("unchecked")
     protected <T, U> U serialize(Boxer<U> wrapper, T value){
         getTypeAdapter((Class<T>) value.getClass()).serialize(wrapper, value);
-        return wrapper.instance;
-    }
-
-    /**
-     * Helper method to serialize a {@link Boxable} class to the specified wrapper.
-     *
-     * @param wrapper {@link Boxer} instance to serialize to.
-     * @param boxable Object of type {@link Boxable} to be serialized.
-     *
-     * @return The wrappers {@link #instance} to which the value has been serialized.
-     */
-    @SuppressWarnings("unchecked")
-    protected <B extends Boxable, U> U serializeBoxable(Boxer<U> wrapper, B boxable){
-        try {
-            Class boxer = boxableClass(boxable.getClass());
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_SERIALIZE, boxable.getClass(), Boxer.class);
-            method.invoke(null, boxable, wrapper);
-        } catch (Exception ignored){}
         return wrapper.instance;
     }
 
@@ -194,25 +177,6 @@ public abstract class Boxer<S> {
     }
 
     /**
-     * Helper method to deserialize a {@link Boxable} class from a specific wrapper.
-     *
-     * @param wrapper {@link Boxer} instance to deserialize from.
-     * @param boxable Type of {@link Boxable} to be deserialized
-     *
-     * @return a deserialized instance of the given type.
-     */
-    @SuppressWarnings("unchecked")
-    protected  <B extends Boxable> B deserializeBoxable(Boxer wrapper, Class<B> boxable){
-        B value = null;
-        try{
-            Class boxer = boxableClass(boxable);
-            Method method = boxer.getMethod(BoxerProcessor.METHOD_DESERIALIZE, Boxer.class);
-            value = (B) method.invoke(null, wrapper);
-        } catch (Exception ignored){}
-        return value;
-    }
-
-    /**
      * Retrieve instance of {@link TypeAdapter} for serialization and deserialization.
      *
      * @param clazz Type which has a {@link TypeAdapter}.
@@ -220,32 +184,19 @@ public abstract class Boxer<S> {
      * @return instance of {@link TypeAdapter} will throw an
      * {@link IllegalArgumentException} if there's no {@link TypeAdapter} found.
      */
-    @SuppressWarnings("unchecked")
     private static <T> TypeAdapter<T> getTypeAdapter(Class<T> clazz) {
-        TypeAdapter<T> adapter = null;
-        try{
-            Class adapters = Class.forName(BoxerProcessor.ADAPTER_PACKAGE_NAME + "." + BoxerProcessor.ADAPTER_CLASS_NAME);
-            Method method = adapters.getMethod(BoxerProcessor.ADAPTER_METHOD_GET, Class.class);
-            adapter = (TypeAdapter<T>) method.invoke(null, clazz);
-        } catch (Exception ignored){}
+        if(adapters == null){
+            try {
+                adapters = (GeneratedAdapters) Class.forName(BoxerProcessor.ADAPTER_PACKAGE_NAME + "." + BoxerProcessor.ADAPTER_CLASS_NAME).newInstance();
+            } catch (Exception ignored) {}
+        }
+        TypeAdapter<T> adapter = adapters != null ? adapters.getAdapter(clazz) : null;
 
         if(adapter == null){
             throw new IllegalArgumentException(
                     String.format("No TypeAdapter found for the class %s", clazz.getCanonicalName()));
         }
         return adapter;
-    }
-
-    /**
-     * Returns a Class object of {@link com.larswerkman.boxer.annotations.Box}
-     * class of a {@link Boxable} class.
-     *
-     * @param clazz {@link Boxable} class.
-     *
-     * @return {@link Class} for the {@link com.larswerkman.boxer.annotations.Box} class of a {@link Boxable}.
-     */
-    private static <T extends Boxable> Class<?> boxableClass(Class<T> clazz) throws ClassNotFoundException {
-        return Class.forName(clazz.getName() + BoxerProcessor.CLASS_EXTENSION);
     }
 
     /**************************
@@ -256,8 +207,9 @@ public abstract class Boxer<S> {
      * Insert an Object value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * Will throw an {@link IllegalArgumentException} if there's no {@link TypeAdapter}
-     * for the value Class.
+     * Will throw an {@link IllegalArgumentException} if the class isn't annotated with
+     * a {@link com.larswerkman.boxer.annotations.Box} annotation, or there's no {@link TypeAdapter}
+     * for the class.
      *
      * @param key an unique identifier
      * @param value a Object which has an {@link TypeAdapter}, or null.
@@ -268,8 +220,9 @@ public abstract class Boxer<S> {
      * Insert an Object array value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * Will throw an {@link IllegalArgumentException} if there's no {@link TypeAdapter}
-     * for the value Class.
+     * Will throw an {@link IllegalArgumentException} if the class isn't annotated with
+     * a {@link com.larswerkman.boxer.annotations.Box} annotation, or there's no {@link TypeAdapter}
+     * for that class.
      *
      * @param key an unique identifier
      * @param value a Object array which has an {@link TypeAdapter}, or null.
@@ -280,43 +233,14 @@ public abstract class Boxer<S> {
      * Insert an Object List value into the mapping of the Boxer,
      * replacing any existing value for the given key.
      *
-     * Will throw an {@link IllegalArgumentException} if there's no {@link TypeAdapter}
-     * for the value Class.
+     * Will throw an {@link IllegalArgumentException} if the class isn't annotated with
+     * a {@link com.larswerkman.boxer.annotations.Box} annotation, or there's no {@link TypeAdapter}
+     * for the class.
      *
      * @param key an unique identifier
      * @param value a List array which has an {@link TypeAdapter}, or null.
      */
     public abstract void addList(String key, List<?> value);
-
-    /**
-     * Inserts a Boxable value into the mapping of the Boxer,
-     * replacing any existing value for the given key.
-     *
-     * @param key an unique identifier
-     * @param value a Boxable object, or null
-     * @param <T> should extend a Boxable
-     */
-    public abstract <T extends Boxable> void addBoxable(String key, T value);
-
-    /**
-     * Inserts a Boxable array value into the mapping of the Boxer,
-     * replacing any existing value for the given key.
-     *
-     * @param key an unique identifier
-     * @param value a Boxable array object, or null
-     * @param <T> should implement a Boxable interface
-     */
-    public abstract <T extends Boxable> void addBoxableArray(String key, T[] value);
-
-    /**
-     * Inserts a Boxable List value into the mapping of the Boxer,
-     * replacing any existing value for the given key.
-     *
-     * @param key an unique identifier
-     * @param value a Boxable List object, or null
-     * @param <T> should implement a Boxable interface
-     */
-    public abstract <T extends Boxable> void addBoxableList(String key, List<T> value);
 
     /**
      * Inserts an Enum value into the mapping of the Boxer,
@@ -596,6 +520,10 @@ public abstract class Boxer<S> {
      * Returns an object of the given type associated with the given key,
      * or null if no mapping of the desired type exists for the given key.
      *
+     * Will throw an {@link IllegalArgumentException} if the class isn't annotated with
+     * a {@link com.larswerkman.boxer.annotations.Box} annotation, or there's no {@link TypeAdapter}
+     * for the class.
+     *
      * @param key an unique identifier
      * @param clazz type to retrieve
      *
@@ -606,6 +534,10 @@ public abstract class Boxer<S> {
     /**
      * Returns an array of objects of the given type associated with the given key,
      * or null if no mapping of the desired type exists for the given key.
+     *
+     * Will throw an {@link IllegalArgumentException} if the class isn't annotated with
+     * a {@link com.larswerkman.boxer.annotations.Box} annotation, or there's no {@link TypeAdapter}
+     * for the class.
      *
      * @param key an unique identifier
      * @param clazz type to retrieve
@@ -618,6 +550,10 @@ public abstract class Boxer<S> {
      * Retruns a list of objects of the given type associated wit the given key,
      * or null if no mapping of the desired type exists for the given key.
      *
+     * Will throw an {@link IllegalArgumentException} if the class isn't annotated with
+     * a {@link com.larswerkman.boxer.annotations.Box} annotation, or there's no {@link TypeAdapter}
+     * for the class.
+     *
      * @param key an unique identifier
      * @param clazz type to retrieve
      * @param listtype instance of list type to store in
@@ -625,44 +561,6 @@ public abstract class Boxer<S> {
      * @return an list instance filled with instance of the given type, or null.
      */
     public abstract <T, E extends List<T>> E getList(String key, Class<T> clazz, Class<E> listtype);
-
-    /**
-     * Returns the value associated with the given key, or null if
-     * no mapping of the desired type exists for the given key or a null
-     * value is explicitly associated with the key.
-     *
-     * @param <T> should implement a Boxable interface
-     * @param key an unique identifier
-     * @param clazz type of Boxable expected class
-     * @return a Boxable value, or null
-     */
-    public abstract <T extends Boxable> T getBoxable(String key, Class<T> clazz);
-
-    /**
-     * Returns the value associated with the given key, or null if
-     * no mapping of the desired type exists for the given key or a null
-     * value is explicitly associated with the key.
-     *
-     * @param key an unique identifier
-     * @param clazz type of Boxable expected class
-     * @param <T> should implement a Boxable interface
-     * @return a Boxable[] value, or null
-     */
-    public abstract <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz);
-
-    /**
-     * Returns the value associated with the given key, or null if
-     * no mapping of the desired type exists for the given key or a null
-     * value is explicitly associated with the key.
-     *
-     * @param key an unique identifier
-     * @param clazz type of Boxable expected class
-     * @param listtype type of expected List, should have a no-args constructor.
-     * @param <T> should implement a Boxable interface
-     * @param <E> Type of the List that will be instantiated
-     * @return a List value, or null
-     */
-    public abstract <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype);
 
     /**
      * Returns the value associated with the given key, or null if

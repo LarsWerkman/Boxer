@@ -16,7 +16,6 @@
 package com.larswerkman.boxer.wrappers.android;
 
 import com.google.android.gms.wearable.DataMap;
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
 
 import java.lang.reflect.Array;
@@ -53,29 +52,6 @@ public class DataMapWrapper extends Boxer<DataMap> {
     @Override
     public void addList(String key, List<?> value) {
         addArray(key, value.toArray());
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxable(String key, T value) {
-        this.dataMap.putDataMap(key, serializeBoxable(new DataMapWrapper(new DataMap()), value));
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableArray(String key, T[] value) {
-        ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
-        for(T box : value){
-            dataMaps.add(serializeBoxable(new DataMapWrapper(new DataMap()), box));
-        }
-        this.dataMap.putDataMapArrayList(key, dataMaps);
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
-        ArrayList<DataMap> dataMaps = new ArrayList<DataMap>();
-        for(T box : value){
-            dataMaps.add(serializeBoxable(new DataMapWrapper(new DataMap()), box));
-        }
-        this.dataMap.putDataMapArrayList(key, dataMaps);
     }
 
     @Override
@@ -323,42 +299,6 @@ public class DataMapWrapper extends Boxer<DataMap> {
             }
         } catch (Exception ignored){};
         return objects;
-    }
-
-    @Override
-    public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        return deserializeBoxable(new DataMapWrapper(this.dataMap.getDataMap(key)), clazz);
-    }
-
-    @Override
-    public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
-        ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
-        if(dataMaps == null){
-            return null;
-        }
-
-        T[] boxables = (T[]) Array.newInstance(clazz, dataMaps.size());
-        for(int i = 0; i < dataMaps.size(); i++){
-            boxables[i] = deserializeBoxable(new DataMapWrapper(dataMaps.get(i)), clazz);
-        }
-        return boxables;
-    }
-
-    @Override
-    public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
-        ArrayList<DataMap> dataMaps = this.dataMap.getDataMapArrayList(key);
-        if(dataMaps == null){
-            return null;
-        }
-
-        E boxables = null;
-        try {
-            boxables = listtype.newInstance();
-            for (int i = 0; i < dataMaps.size(); i++) {
-                boxables.add(deserializeBoxable(new DataMapWrapper(dataMaps.get(i)), clazz));
-            }
-        } catch (Exception e){};
-        return boxables;
     }
 
     public <T extends Enum> T retrieveEnum(String value, Class<T> clazz){

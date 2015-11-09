@@ -30,6 +30,8 @@ package com.larswerkman.boxer;
  */
 public abstract class TypeAdapter<T> {
 
+    public TypeAdapter(){}
+
     /**
      * Serialize an object of type {@code T}
      * to a generic {@code Boxer<?>} object

@@ -1,5 +1,7 @@
 package com.larswerkman.boxer.internal;
 
+import com.squareup.javapoet.ClassName;
+
 import javax.lang.model.type.TypeMirror;
 
 /**
@@ -7,15 +9,15 @@ import javax.lang.model.type.TypeMirror;
  */
 class AdapterBinding {
 
-    private TypeMirror adapter;
+    private ClassName adapter;
     private TypeMirror type;
 
-    public AdapterBinding(TypeMirror adapter, TypeMirror type){
+    public AdapterBinding(ClassName adapter, TypeMirror type){
         this.adapter = adapter;
         this.type = type;
     }
 
-    public TypeMirror getAdapter() {
+    public ClassName getAdapter() {
         return adapter;
     }
 

@@ -3,7 +3,6 @@ package com.larswerkman.boxer.wrappers.android;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
 
 import java.lang.reflect.Array;
@@ -111,31 +110,6 @@ public class SQLiteWrapper extends Boxer<SQLiteDatabase> {
     @Override
     public void addList(String key, List<?> value) {
         addArray(key, value.toArray());
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxable(String key, T value) {
-        ContentValues content = new ContentValues();
-        content.put(COLUMN_VALUE, 1);
-        addKeyValue(getIdentifier(key), content, TABLE_BOXABLE);
-
-        serializeBoxable(new SQLiteWrapper(database, getIdentifier(key)), value);
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableArray(String key, T[] value) {
-        ContentValues content = new ContentValues();
-        content.put(COLUMN_VALUE, value.length);
-        addKeyValue(getIdentifier(key), content, TABLE_ARRAY_SIZE);
-
-        for(int i = 0; i < value.length; i++){
-            serializeBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), value[i]);
-        }
-    }
-
-    @Override
-    public <T extends Boxable> void addBoxableList(String key, List<T> value) {
-        addBoxableArray(key, (T[]) value.toArray());
     }
 
     @Override
@@ -462,51 +436,6 @@ public class SQLiteWrapper extends Boxer<SQLiteDatabase> {
             boxables = listtype.newInstance();
             for (int i = 0; i < size; i++) {
                 boxables.add(deserialize(new SQLiteWrapper(database, getIdentifier(key, i)), clazz));
-            }
-        } catch (Exception e){};
-        return boxables;
-    }
-
-    @Override
-    public <T extends Boxable> T getBoxable(String key, Class<T> clazz) {
-        Cursor cursor = getKeyValue(getIdentifier(key), TABLE_BOXABLE);
-        if(cursor == null || cursor.getCount() == 0){
-            return null;
-        }
-
-        return deserializeBoxable(new SQLiteWrapper(database, getIdentifier(key)), clazz);
-    }
-
-    @Override
-    public <T extends Boxable> T[] getBoxableArray(String key, Class<T> clazz) {
-        Cursor cursor = getKeyValue(getIdentifier(key), TABLE_ARRAY_SIZE);
-        if(cursor == null || cursor.getCount() == 0){
-            return null;
-        }
-        cursor.moveToFirst();
-        int size = cursor.getInt(1);
-
-        T[] boxables = (T[]) Array.newInstance(clazz, size);
-        for(int i = 0; i < size; i++){
-            boxables[i] = deserializeBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), clazz);
-        }
-        return boxables;
-    }
-
-    @Override
-    public <T extends Boxable, E extends List<T>> E getBoxableList(String key, Class<T> clazz, Class<E> listtype) {
-        Cursor cursor = getKeyValue(getIdentifier(key), TABLE_ARRAY_SIZE);
-        if(cursor == null || cursor.getCount() == 0){
-            return null;
-        }
-        cursor.moveToFirst();
-        int size = cursor.getInt(1);
-
-        E boxables = null;
-        try {
-            boxables = listtype.newInstance();
-            for (int i = 0; i < size; i++) {
-                boxables.add(deserializeBoxable(new SQLiteWrapper(database, getIdentifier(key, i)), clazz));
             }
         } catch (Exception e){};
         return boxables;

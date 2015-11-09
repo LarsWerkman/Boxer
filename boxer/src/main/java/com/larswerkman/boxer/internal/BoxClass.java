@@ -2,8 +2,10 @@ package com.larswerkman.boxer.internal;
 
 import com.larswerkman.boxer.Boxer;
 import com.larswerkman.boxer.Execution;
+import com.larswerkman.boxer.TypeAdapter;
 import com.squareup.javapoet.*;
 
+import javax.annotation.Generated;
 import javax.lang.model.element.Modifier;
 import java.util.List;
 
@@ -13,7 +15,7 @@ import java.util.List;
 final class BoxClass {
 
     private static final String BOXER_VARIABLE = "boxer";
-    private static final String BOXABLE_VARIABLE = "boxable";
+    private static final String BOXABLE_VARIABLE = "object";
     private static final ParameterizedTypeName BOXER_CLASS = ParameterizedTypeName.get(
             ClassName.get(Boxer.class),
             WildcardTypeName.subtypeOf(Object.class)
@@ -34,7 +36,12 @@ final class BoxClass {
 
     public TypeSpec build(){
         return TypeSpec.classBuilder(className)
+                .superclass(ParameterizedTypeName.get(
+                        ClassName.get(TypeAdapter.class), targetClass))
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .addAnnotation(AnnotationSpec.builder(Generated.class)
+                        .addMember("value", "$S", BoxerProcessor.PROCESSOR_NAME)
+                        .build())
                 .addMethod(serializeMethod())
                 .addMethod(deserializeMethod())
                 .build();
@@ -43,9 +50,10 @@ final class BoxClass {
     private MethodSpec serializeMethod() {
         MethodSpec.Builder builder = MethodSpec
                 .methodBuilder(BoxerProcessor.METHOD_SERIALIZE)
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addParameter(targetClass, BOXABLE_VARIABLE)
-                .addParameter(BOXER_CLASS, BOXER_VARIABLE);
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(BOXER_CLASS, BOXER_VARIABLE)
+                .addParameter(targetClass, BOXABLE_VARIABLE);
         for(MethodBinding method : methods){
             if(method.getMethod() == MethodBinding.Method.SERIALIZE
                     && method.getExecution() == Execution.BEFORE){
@@ -67,7 +75,8 @@ final class BoxClass {
     private MethodSpec deserializeMethod() {
         MethodSpec.Builder builder = MethodSpec
                 .methodBuilder(BoxerProcessor.METHOD_DESERIALIZE)
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
                 .returns(targetClass)
                 .addParameter(BOXER_CLASS, BOXER_VARIABLE)
                 .addStatement("$T $N = new $T()", targetClass, BOXABLE_VARIABLE, targetClass);
