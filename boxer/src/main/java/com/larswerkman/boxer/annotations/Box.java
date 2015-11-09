@@ -21,10 +21,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation that defines which class should be consumed by the annotation processor,
- * Classes annatated with a {@link com.larswerkman.boxer.annotations.Box} annotation
- * should also always implement a {@link com.larswerkman.boxer.Boxable} interface.
- */
+ * Class annotated with the {@link Box} annotation will have a {@link com.larswerkman.boxer.TypeAdapter}
+ * generated for them.
+ **/
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
 public @interface Box {

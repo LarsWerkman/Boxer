@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation that will be executed during serialization of a
- * {@link com.larswerkman.boxer.Boxable} class.
+ * class annotated with an {@link Box} annotation.
  *
  * Methods annotated with the {@link Serialize} annotation
  * have can have an argument of the type {@link com.larswerkman.boxer.Boxer}
