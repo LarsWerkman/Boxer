@@ -95,32 +95,6 @@ public abstract class Boxer<S> {
     }
 
     /**
-     * Returns the fields of a specific class which will be serialized.
-     *
-     * @param clazz The boxbale class you want to inspect
-     * @return An {@link java.util.List} of fields, will return an empty list if there are none.
-     */
-    public static List<Field> getBoxableFields(Class<? extends Boxable> clazz){
-        List<Field> fields = new ArrayList<Field>();
-        for(Field field : clazz.getDeclaredFields()){
-            if(!Modifier.isTransient(field.getModifiers())){
-                fields.add(field);
-            }
-        }
-
-        Class superClass = clazz.getSuperclass();
-        while(superClass != null){
-            for(Field field : superClass.getDeclaredFields()){
-                if(!fields.contains(field) && !Modifier.isTransient(field.getModifiers())){
-                    fields.add(field);
-                }
-            }
-            superClass = superClass.getSuperclass();
-        }
-        return fields;
-    }
-
-    /**
      * Globally register {@link com.larswerkman.boxer.Boxer} implementations
      * to a specified {@code Class}.
      *

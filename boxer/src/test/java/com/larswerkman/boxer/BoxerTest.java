@@ -78,14 +78,4 @@ public class BoxerTest {
         Assertions.assertThat(Boxer.from(new HashMap<String, Object>()))
                 .isNull();
     }
-
-    @Test
-    public void boxableFields(){
-        Assertions.assertThat(Boxer.getBoxableFields(PrimaryBoxable.class))
-                .hasSize(9);
-        Assertions.assertThat(Boxer.getBoxableFields(TransientBoxable.class))
-                .hasSize(0);
-        Assertions.assertThat(Boxer.getBoxableFields(InheritancePrimaryBoxable.class))
-                .hasSize(10);
-    }
 }
