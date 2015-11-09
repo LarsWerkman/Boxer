@@ -1,6 +1,5 @@
 package com.larswerkman.boxer.boxables;
 
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.Boxer;
 import com.larswerkman.boxer.Execution;
 import com.larswerkman.boxer.annotations.Box;
@@ -12,7 +11,7 @@ import org.assertj.core.api.Assertions;
  * Created by lars on 25-05-15.
  */
 @Box
-public class SerializeBoxable implements Boxable {
+public class SerializeBoxable {
 
     private transient boolean serialized = false;
     private transient boolean deserialized = false;

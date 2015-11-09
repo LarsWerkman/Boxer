@@ -1,7 +1,5 @@
 package com.larswerkman.boxer.boxables;
 
-import com.larswerkman.boxer.Boxable;
-import com.larswerkman.boxer.annotations.Adapter;
 import com.larswerkman.boxer.annotations.Box;
 
 import java.util.Date;
@@ -10,7 +8,7 @@ import java.util.Date;
  * Created by lars on 05-06-15.
  */
 @Box
-public class AdapterBoxable implements Boxable {
+public class AdapterBoxable {
 
     public Date date;
 

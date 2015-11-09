@@ -1,6 +1,5 @@
 package com.larswerkman.boxer.boxables;
 
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.annotations.Box;
 import com.larswerkman.boxer.annotations.Wrap;
 
@@ -10,7 +9,7 @@ import java.util.*;
  * Created by lars on 23-04-15.
  */
 @Box
-public class ListBoxable implements Boxable {
+public class ListBoxable {
 
     public List<Integer> defaultList;
 

@@ -1,19 +1,18 @@
 package com.larswerkman.boxer.boxables;
 
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.annotations.Box;
 
 /**
  * Created by lars on 12-09-15.
  */
 @Box
-public class NestedBoxable implements Boxable {
+public class NestedBoxable {
 
     @Box
-    public static class StaticFirst implements Boxable {
+    public static class StaticFirst {
 
         @Box
-        public static class StaticSecond implements Boxable {
+        public static class StaticSecond {
             public String string;
 
             public StaticSecond setup() {

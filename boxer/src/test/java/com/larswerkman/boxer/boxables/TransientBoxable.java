@@ -1,13 +1,12 @@
 package com.larswerkman.boxer.boxables;
 
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.annotations.Box;
 
 /**
  * Created by lars on 23-04-15.
  */
 @Box
-public class TransientBoxable implements Boxable {
+public class TransientBoxable {
 
     public transient String string;
     public transient int integer;

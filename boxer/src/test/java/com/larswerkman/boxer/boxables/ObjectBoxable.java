@@ -1,6 +1,5 @@
 package com.larswerkman.boxer.boxables;
 
-import com.larswerkman.boxer.Boxable;
 import com.larswerkman.boxer.annotations.Box;
 
 import java.util.Arrays;
@@ -10,7 +9,7 @@ import java.util.List;
  * Created by lars on 29-04-15.
  */
 @Box
-public class ObjectBoxable implements Boxable {
+public class ObjectBoxable {
 
     public PrimaryBoxable primaryBoxable;
     public PrimaryBoxable[] primaryBoxableArray;
