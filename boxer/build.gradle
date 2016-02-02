@@ -16,7 +16,7 @@ dependencies {
 }
 
 group = 'com.larswerkman'
-version = '0.4.0'
+version = '0.4.1'
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
