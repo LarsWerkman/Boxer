@@ -84,7 +84,7 @@ public abstract class Boxer<S> {
             } else {
                 for(Class wrapperClass : wrappers.keySet()){
                     if(wrapperClass.isAssignableFrom(object.getClass())){
-                        wrapper = wrappers.get(object.getClass());
+                        wrapper = wrappers.get(wrapperClass);
                         break;
                     }
                 }
