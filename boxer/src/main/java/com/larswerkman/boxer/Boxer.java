@@ -79,18 +79,20 @@ public abstract class Boxer<S> {
 
         try {
             Class<? extends Boxer> wrapper = null;
+            Class wClass = null;
             if(wrappers.containsKey(object.getClass())){
                 wrapper = wrappers.get(object.getClass());
             } else {
                 for(Class wrapperClass : wrappers.keySet()){
                     if(wrapperClass.isAssignableFrom(object.getClass())){
                         wrapper = wrappers.get(wrapperClass);
+                        wClass = wrapperClass;
                         break;
                     }
                 }
             }
             if(wrapper != null) {
-                return wrapper.getDeclaredConstructor(object.getClass()).newInstance(object);
+                return wrapper.getDeclaredConstructor(wClass).newInstance(object);
             }
         } catch (Exception ignored){}
         return null;
